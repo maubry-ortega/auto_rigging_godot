@@ -518,22 +518,53 @@ func _on_add_seed_pressed():
 func _on_texture_gui_input(event):
 	if adding_seeds and event is InputEventMouseButton and event.pressed:
 		if not atlas_image:
-			push_error("No hay atlas")
+			push_error("No hay atlas cargado.")
 			adding_seeds = false
 			return
-		
-		var pos = $TextureRect.get_local_mouse_position()
-		var img_size = atlas_image.get_size()
-		var seed = Vector2i(int(pos.x), int(pos.y))
-		
-		if seed.x < 0 or seed.x >= img_size.x or seed.y < 0 or seed.y >= img_size.y:
-			push_warning("Fuera de límites")
-			adding_seeds = false
+
+		var rect = $TextureRect
+		var tex_size = atlas_image.get_size()
+		var rect_size = rect.get_size()
+		if tex_size.x == 0 or tex_size.y == 0:
+			push_error("Atlas vacío o inválido.")
 			return
-		
+
+		# Calculamos proporciones
+		var texture_aspect = float(tex_size.x) / tex_size.y
+		var rect_aspect = float(rect_size.x) / rect_size.y
+
+		var draw_size = Vector2()
+		var offset = Vector2()
+
+		# Ajuste según el modo “Keep Aspect Centered”
+		if texture_aspect > rect_aspect:
+			draw_size.x = rect_size.x
+			draw_size.y = rect_size.x / texture_aspect
+			offset.y = (rect_size.y - draw_size.y) / 2.0
+		else:
+			draw_size.y = rect_size.y
+			draw_size.x = rect_size.y * texture_aspect
+			offset.x = (rect_size.x - draw_size.x) / 2.0
+
+		# Coordenadas del clic en el área visible
+		var pos = event.position - offset
+
+		# 💡 Si el clic cae levemente fuera (por errores de redondeo), toleramos 1px
+		if pos.x < -1 or pos.y < -1 or pos.x > draw_size.x + 1 or pos.y > draw_size.y + 1:
+			push_warning("Clic fuera de la imagen visible.")
+			return
+
+		# Mapeo al espacio del atlas (píxeles)
+		var img_pos = pos / draw_size * Vector2(tex_size)
+		var seed = Vector2i(int(img_pos.x), int(img_pos.y))
+
+		# Clamp de seguridad (por si el clic fue al borde)
+		seed.x = clamp(seed.x, 0, tex_size.x - 1)
+		seed.y = clamp(seed.y, 0, tex_size.y - 1)
+
 		if seeds.has(current_part_name):
-			print("  Reemplazando")
-		
+			print("  Reemplazando semilla anterior.")
+
 		seeds[current_part_name] = seed
 		print("  ✅ %s → %s" % [current_part_name, seed])
 		adding_seeds = false
@@ -546,14 +577,23 @@ func _on_texture_rect_draw():
 
 	var tex_size = atlas_image.get_size()
 	var rect_size = rect.get_size()
+	var texture_aspect = tex_size.x / tex_size.y
+	var rect_aspect = rect_size.x / rect_size.y
 
-	# Convertimos tex_size a Vector2 para evitar error de tipo
-	var scale = rect_size / Vector2(tex_size)
+	var draw_size = Vector2()
+	var offset = Vector2()
 
-	# Dibujar cada punto semilla con escala correcta
+	if texture_aspect > rect_aspect:
+		draw_size.x = rect_size.x
+		draw_size.y = rect_size.x / texture_aspect
+		offset.y = (rect_size.y - draw_size.y) / 2.0
+	else:
+		draw_size.y = rect_size.y
+		draw_size.x = rect_size.y * texture_aspect
+		offset.x = (rect_size.x - draw_size.x) / 2.0
+
 	for part_name in seeds.keys():
-		var seed_vec = Vector2(seeds[part_name])
-		var pos = seed_vec * scale
+		var pos = Vector2(seeds[part_name]) / Vector2(tex_size) * draw_size + offset
 		rect.draw_circle(pos, 4.0, Color.RED)
 
 		var font = get_theme_font("font", "Label")
