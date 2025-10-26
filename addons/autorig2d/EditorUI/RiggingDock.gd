@@ -3,7 +3,8 @@ extends VBoxContainer
 
 # Constantes
 const PART_NAMES = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg", "left_hand", "right_hand", "left_foot", "right_foot"]
-const ATLAS_PIXEL_TO_UNIT_SCALE = 1.0 
+const ATLAS_PIXEL_TO_UNIT_SCALE = 2.0 
+const MAX_REGION_PIXELS = 400000
 
 # Variables de estado
 var atlas_path: String = ""
@@ -15,7 +16,7 @@ var adding_seeds: bool = false
 var current_part_name: String = ""
 
 # VARIABLE DE CONTROL DE DETALLE DEL POLÍGONO (Epsilon RDP)
-var polygon_epsilon: float = 0.5 
+var polygon_epsilon: float = 0.1
 
 # ==============================================================================
 ## Funciones Principales
@@ -130,7 +131,7 @@ func _extract_all_regions(image: Image) -> Array:
 			# Hacer flood fill para obtener toda la región
 			var region = _flood_fill_simple(image, pos, visited, alpha_threshold)
 			
-			if region.size() > 100:  # Ignorar regiones muy pequeñas (ruido)
+			if region.size() > 30: # Ignorar regiones muy pequeñas (ruido)
 				regions.append(region)
 				print("  → Región encontrada: %d píxeles" % region.size())
 	
@@ -179,7 +180,7 @@ func _flood_fill_simple(image: Image, start: Vector2i, visited_global: Dictionar
 		queue.append(pos + Vector2i(0, -1))
 		
 		# Límite de seguridad
-		if region.size() > 100000:
+		if region.size() > MAX_REGION_PIXELS:
 			break
 	
 	return region
@@ -189,7 +190,7 @@ func _find_region_for_seed(seed: Vector2i, regions: Array, image: Image) -> Dict
 	"""
 	Encuentra la región que contiene el punto semilla (o la más cercana).
 	"""
-	var alpha_threshold = 0.1
+	var alpha_threshold = 0.05
 	
 	# Primero verificar si el seed está directamente en alguna región
 	for region in regions:
@@ -260,7 +261,7 @@ func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Di
 	
 	# 1. Crear BitMap
 	var bitmap = BitMap.new()
-	bitmap.create(image.get_size())
+	bitmap.create(Vector2i(image.get_width(), image.get_height()))
 	
 	for pixel in pixels.keys():
 		bitmap.set_bitv(pixel, true)
@@ -499,6 +500,7 @@ func _on_file_selected(path: String):
 	if atlas_image:
 		atlas_texture = ImageTexture.create_from_image(atlas_image)
 		$TextureRect.texture = atlas_texture
+		$TextureRect.custom_minimum_size = atlas_image.get_size()  # ← nuevo
 		print("\n✅ Atlas: ", path)
 		seeds.clear()
 		$TextureRect.queue_redraw()
