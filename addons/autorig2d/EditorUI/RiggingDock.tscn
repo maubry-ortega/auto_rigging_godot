@@ -1,0 +1,70 @@
+[gd_scene load_steps=2 format=3 uid="uid://bptqvvkgrd8di"]
+
+[ext_resource type="Script" uid="uid://c0u6olr5is4i6" path="res://addons/autorig2d/EditorUI/RiggingDock.gd" id="1_gh103"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="RiggingDock" type="VBoxContainer" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 40.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gh103")
+
+[node name="TextureRect" type="TextureRect" parent="RiggingDock"]
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FileDialog" type="FileDialog" parent="RiggingDock"]
+oversampling_override = 1.0
+title = "Seleccionar Atlas PNG"
+exclusive = false
+access = 2
+filters = PackedStringArray("*.png")
+
+[node name="PartNameHBox" type="HBoxContainer" parent="RiggingDock"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RiggingDock/PartNameHBox"]
+layout_mode = 2
+text = "Parte del Cuerpo:"
+
+[node name="PartNameOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 6
+popup/item_0/text = "torso"
+popup/item_0/id = 0
+popup/item_1/text = "head"
+popup/item_1/id = 1
+popup/item_2/text = "left_arm"
+popup/item_2/id = 2
+popup/item_3/text = "right_arm"
+popup/item_3/id = 3
+popup/item_4/text = "left_leg"
+popup/item_4/id = 4
+popup/item_5/text = "right_leg"
+popup/item_5/id = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="RiggingDock"]
+layout_mode = 2
+
+[node name="GenerateButton" type="Button" parent="RiggingDock/HBoxContainer"]
+layout_mode = 2
+text = "Generar Rig"
+
+[node name="SelectAtlasButton" type="Button" parent="RiggingDock/HBoxContainer"]
+layout_mode = 2
+text = "Seleccionar Atlas"
+
+[node name="AddSeedButton" type="Button" parent="RiggingDock/HBoxContainer"]
+layout_mode = 2
+text = "Agregar Punto"

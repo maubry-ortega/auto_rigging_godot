@@ -1,0 +1,8 @@
+[gd_resource type="GDScript" format=3 uid="uid://bxq8qwm7hy215"]
+
+[resource]
+script/source = "[gd_resource type=\"Skeleton2D\" format=3 uid=\"uid://xxxxxxxx\"]
+
+[resource]
+bones = []
+"
