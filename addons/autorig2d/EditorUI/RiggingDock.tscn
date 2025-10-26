@@ -16,44 +16,6 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gh103")
 
-[node name="TextureRect" type="TextureRect" parent="RiggingDock"]
-custom_minimum_size = Vector2(300, 300)
-layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="FileDialog" type="FileDialog" parent="RiggingDock"]
-oversampling_override = 1.0
-title = "Seleccionar Atlas PNG"
-exclusive = false
-access = 2
-filters = PackedStringArray("*.png")
-
-[node name="PartNameHBox" type="HBoxContainer" parent="RiggingDock"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="RiggingDock/PartNameHBox"]
-layout_mode = 2
-text = "Parte del Cuerpo:"
-
-[node name="PartNameOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-selected = 0
-item_count = 6
-popup/item_0/text = "torso"
-popup/item_0/id = 0
-popup/item_1/text = "head"
-popup/item_1/id = 1
-popup/item_2/text = "left_arm"
-popup/item_2/id = 2
-popup/item_3/text = "right_arm"
-popup/item_3/id = 3
-popup/item_4/text = "left_leg"
-popup/item_4/id = 4
-popup/item_5/text = "right_leg"
-popup/item_5/id = 5
-
 [node name="HBoxContainer" type="HBoxContainer" parent="RiggingDock"]
 layout_mode = 2
 
@@ -68,3 +30,65 @@ text = "Seleccionar Atlas"
 [node name="AddSeedButton" type="Button" parent="RiggingDock/HBoxContainer"]
 layout_mode = 2
 text = "Agregar Punto"
+
+[node name="PartNameHBox" type="HBoxContainer" parent="RiggingDock"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RiggingDock/PartNameHBox"]
+layout_mode = 2
+text = "Parte del Cuerpo:"
+
+[node name="PartNameOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+selected = 0
+item_count = 10
+popup/item_0/text = "torso"
+popup/item_0/id = 0
+popup/item_1/text = "head"
+popup/item_1/id = 1
+popup/item_2/text = "left_arm"
+popup/item_2/id = 2
+popup/item_3/text = "right_arm"
+popup/item_3/id = 3
+popup/item_4/text = "left_leg"
+popup/item_4/id = 4
+popup/item_5/text = "right_leg"
+popup/item_5/id = 5
+popup/item_6/text = "left_hand"
+popup/item_6/id = 6
+popup/item_7/text = "right_hand"
+popup/item_7/id = 7
+popup/item_8/text = "left_foot"
+popup/item_8/id = 8
+popup/item_9/text = "right_foot"
+popup/item_9/id = 9
+
+[node name="EpsilonHBox" type="HBoxContainer" parent="RiggingDock"]
+layout_mode = 2
+
+[node name="EpsilonLabel" type="Label" parent="RiggingDock/EpsilonHBox"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Epsilon RDP: 0.50"
+
+[node name="EpsilonSlider" type="HSlider" parent="RiggingDock/EpsilonHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+min_value = 0.01
+max_value = 5.0
+step = 0.01
+value = 0.5
+
+[node name="TextureRect" type="TextureRect" parent="RiggingDock"]
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="FileDialog" type="FileDialog" parent="RiggingDock"]
+oversampling_override = 1.0
+title = "Seleccionar Atlas PNG"
+exclusive = false
+access = 2
+filters = PackedStringArray("*.png")

@@ -2,8 +2,6 @@
 class_name SeedPointProcessor
 extends Node
 
-var image_tools = ImageTools.new()
-
 # Procesa el atlas y los puntos semilla
 func process_seeds(atlas_path: String) -> Dictionary:
 	var data = PartLoader.new().load_atlas_and_config(atlas_path)
