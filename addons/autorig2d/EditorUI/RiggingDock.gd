@@ -1,13 +1,15 @@
 @tool
 extends VBoxContainer
 
-# Instancia del módulo de lógica (Ruta ajustada según tu carpeta 'core')
+# Instancia del módulo de lógica
 const PolygonGenerator = preload("uid://dcc5an3ptehth")
 var generator = PolygonGenerator.new()
 
-# Constantes y variables de estado (se mantienen en la UI, excepto las constantes del core)
-@export var PART_NAMES = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg", "left_hand", "right_hand", "left_foot", "right_foot"]
+# Instancia del manager de partes
+const PartListManager = preload("res://addons/autorig2d/core/PartListManager.gd")
+var part_manager = PartListManager.new()
 
+# Variables de estado
 var atlas_path: String = ""
 var atlas_image: Image
 var atlas_texture: ImageTexture
@@ -19,32 +21,62 @@ var current_part_name: String = ""
 # VARIABLE DE CONTROL DE DETALLE DEL POLÍGONO (Epsilon RDP)
 var polygon_epsilon: float = 0.1
 
+# Diálogo para añadir nuevas partes
+var _new_part_dialog: AcceptDialog = null
+
 # ==============================================================================
 ## Funciones de UI y Conexión
 # ==============================================================================
 
 func _ready():
-	# Conexiones de UI
+	# CONEXIONES CORREGIDAS
 	$FileDialog.file_selected.connect(_on_file_selected)
+	
+	# Botones en $HBoxContainer
 	$HBoxContainer/SelectAtlasButton.pressed.connect(_on_select_atlas_pressed)
-	$HBoxContainer/AddSeedButton.pressed.connect(_on_add_seed_pressed)
 	$HBoxContainer/GenerateButton.pressed.connect(_on_generate_pressed)
+	$HBoxContainer/AddSeedButton.pressed.connect(_on_add_seed_pressed)
+	
+	# Botón en $PartNameHBox
+	$PartNameHBox/AddNewPartButton.pressed.connect(_on_add_new_part_pressed)
+	
+	# Área de dibujo
 	$TextureRect.gui_input.connect(_on_texture_gui_input)
 	$TextureRect.draw.connect(_on_texture_rect_draw)
 	
 	# Configuración del Slider
-	if $EpsilonHBox/EpsilonSlider:
-		$EpsilonHBox/EpsilonSlider.value = polygon_epsilon
-		$EpsilonHBox/EpsilonSlider.value_changed.connect(_on_epsilon_slider_visual_update)
-		# Usamos value_changed en Godot 4 para actualizar mientras se arrastra
-		$EpsilonHBox/EpsilonSlider.value_changed.connect(_on_epsilon_slider_changed)
+	var epsilon_slider = $EpsilonHBox/EpsilonSlider
+	if epsilon_slider:
+		epsilon_slider.value = polygon_epsilon
+		epsilon_slider.value_changed.connect(_on_epsilon_slider_visual_update)
+		epsilon_slider.value_changed.connect(_on_epsilon_slider_changed)
 		_on_epsilon_slider_visual_update(polygon_epsilon)
 	
-	# Llenar OptionButton
+	# Conectar señal del part_manager
+	part_manager.part_name_added.connect(_on_part_name_added)
+	
+	# Llenar OptionButton con las partes actuales
+	_update_part_option_button()
+	
+	# Crear el diálogo de nueva parte
+	_create_new_part_dialog()
+
+func _update_part_option_button():
 	var option_button = $PartNameHBox/PartNameOptionButton
 	option_button.clear()
-	for part_name in PART_NAMES:
+	for part_name in part_manager.get_part_names():
 		option_button.add_item(part_name)
+
+func _on_part_name_added(new_name: String, all_parts: Array):
+	print("📝 Nueva parte añadida desde manager: ", new_name)
+	_update_part_option_button()
+	
+	# Seleccionar automáticamente la nueva parte
+	var option_button = $PartNameHBox/PartNameOptionButton
+	for i in range(option_button.get_item_count()):
+		if option_button.get_item_text(i) == new_name:
+			option_button.select(i)
+			break
 
 func _on_epsilon_slider_changed(value: float):
 	polygon_epsilon = value
@@ -77,7 +109,93 @@ func _on_add_seed_pressed():
 	
 	current_part_name = option_button.get_item_text(option_button.get_selected_id())
 	adding_seeds = true
-	print("\n📍 Agregar: ", current_part_name)
+	print("\n📍 Agregar semilla para: ", current_part_name)
+
+# ------------------------------------------------------------------------------
+## Lógica Dinámica de Partes
+# ------------------------------------------------------------------------------
+
+func _create_new_part_dialog():
+	_new_part_dialog = AcceptDialog.new()
+	_new_part_dialog.title = "Añadir Nueva Parte"
+	
+	# Contenedor para el LineEdit y el texto
+	var container = VBoxContainer.new()
+	container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	var label = Label.new()
+	label.text = "Introduce el nombre (snake_case recomendado):"
+	container.add_child(label)
+	
+	var line_edit = LineEdit.new()
+	line_edit.name = "NewPartNameEdit"
+	line_edit.placeholder_text = "ej: ala_izquierda, tercer_ojo"
+	line_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.add_child(line_edit)
+	
+	_new_part_dialog.add_child(container)
+	_new_part_dialog.min_size = Vector2(350, 120)
+	
+	_new_part_dialog.confirmed.connect(_on_new_part_confirmed)
+	
+	# Añade el diálogo al nodo base del plugin
+	add_child(_new_part_dialog)
+
+func _on_add_new_part_pressed():
+	var line_edit = _new_part_dialog.find_child("NewPartNameEdit")
+	if line_edit:
+		line_edit.text = ""
+		line_edit.grab_focus()
+	
+	_new_part_dialog.popup_centered()
+
+func _on_new_part_confirmed():
+	var line_edit = _new_part_dialog.find_child("NewPartNameEdit")
+	if not line_edit: 
+		return
+	
+	var new_name = line_edit.text.strip_edges().to_lower().replace(" ", "_")
+	line_edit.text = ""
+	
+	if new_name.is_empty():
+		push_warning("El nombre de la parte no puede estar vacío.")
+		return
+	
+	# Usar el manager para añadir la nueva parte
+	part_manager.add_part_name(new_name)
+
+# ------------------------------------------------------------------------------
+## Lógica de Interacción con TextureRect (Mapeo)
+# ------------------------------------------------------------------------------
+
+func _get_texture_mapping_data():
+	var rect = $TextureRect
+	if not atlas_image:
+		return null
+		
+	var tex_size = atlas_image.get_size()
+	var rect_size = rect.get_size()
+	var texture_aspect = float(tex_size.x) / tex_size.y
+	var rect_aspect = float(rect_size.x) / rect_size.y
+
+	var draw_size = Vector2()
+	var offset = Vector2()
+
+	# Ajuste según el modo "Keep Aspect Centered"
+	if texture_aspect > rect_aspect:
+		draw_size.x = rect_size.x
+		draw_size.y = rect_size.x / texture_aspect
+		offset.y = (rect_size.y - draw_size.y) / 2.0
+	else:
+		draw_size.y = rect_size.y
+		draw_size.x = rect_size.y * texture_aspect
+		offset.x = (rect_size.x - draw_size.x) / 2.0
+		
+	return {
+		"tex_size": tex_size,
+		"draw_size": draw_size,
+		"offset": offset
+	}
 
 func _on_texture_gui_input(event):
 	if adding_seeds and event is InputEventMouseButton and event.pressed:
@@ -86,34 +204,20 @@ func _on_texture_gui_input(event):
 			adding_seeds = false
 			return
 
-		var rect = $TextureRect
-		var tex_size = atlas_image.get_size()
-		var rect_size = rect.get_size()
+		var data = _get_texture_mapping_data()
+		if not data:
+			return
+			
+		var tex_size = data.tex_size
+		var draw_size = data.draw_size
+		var offset = data.offset
+		
 		if tex_size.x == 0 or tex_size.y == 0:
 			push_error("Atlas vacío o inválido.")
 			return
 
-		# Calculamos proporciones (Mapeo de la UI al Atlas)
-		var texture_aspect = float(tex_size.x) / tex_size.y
-		var rect_aspect = float(rect_size.x) / rect_size.y
-
-		var draw_size = Vector2()
-		var offset = Vector2()
-
-		# Ajuste según el modo “Keep Aspect Centered”
-		if texture_aspect > rect_aspect:
-			draw_size.x = rect_size.x
-			draw_size.y = rect_size.x / texture_aspect
-			offset.y = (rect_size.y - draw_size.y) / 2.0
-		else:
-			draw_size.y = rect_size.y
-			draw_size.x = rect_size.y * texture_aspect
-			offset.x = (rect_size.x - draw_size.x) / 2.0
-
-		# Coordenadas del clic en el espacio del atlas (píxeles)
 		var pos = event.position - offset
 		
-		# Verificación de límites (tolerancia de 1px)
 		if pos.x < -1 or pos.y < -1 or pos.x > draw_size.x + 1 or pos.y > draw_size.y + 1:
 			push_warning("Clic fuera de la imagen visible.")
 			return
@@ -121,7 +225,6 @@ func _on_texture_gui_input(event):
 		var img_pos = pos / draw_size * Vector2(tex_size)
 		var seed = Vector2i(int(img_pos.x), int(img_pos.y))
 
-		# Clamp de seguridad
 		seed.x = clamp(seed.x, 0, tex_size.x - 1)
 		seed.y = clamp(seed.y, 0, tex_size.y - 1)
 
@@ -138,22 +241,13 @@ func _on_texture_rect_draw():
 	if not atlas_image:
 		return
 
-	var tex_size = atlas_image.get_size()
-	var rect_size = rect.get_size()
-	var texture_aspect = tex_size.x / tex_size.y
-	var rect_aspect = rect_size.x / rect_size.y
-
-	var draw_size = Vector2()
-	var offset = Vector2()
-
-	if texture_aspect > rect_aspect:
-		draw_size.x = rect_size.x
-		draw_size.y = rect_size.x / texture_aspect
-		offset.y = (rect_size.y - draw_size.y) / 2.0
-	else:
-		draw_size.y = rect_size.y
-		draw_size.x = rect_size.y * texture_aspect
-		offset.x = (rect_size.x - draw_size.x) / 2.0
+	var data = _get_texture_mapping_data()
+	if not data:
+		return
+		
+	var tex_size = data.tex_size
+	var draw_size = data.draw_size
+	var offset = data.offset
 
 	for part_name in seeds.keys():
 		var pos = Vector2(seeds[part_name]) / Vector2(tex_size) * draw_size + offset
@@ -173,9 +267,7 @@ func _on_generate_pressed():
 		push_error("Agrega puntos semilla")
 		return
 	
-	# ======================================================================
 	# LLAMADA AL MÓDULO MODULARIZADO
-	# ======================================================================
 	var polygons = generator.generate_body_part_polygons(atlas_image, atlas_texture, seeds, polygon_epsilon)
 	
 	if polygons.is_empty():
@@ -193,16 +285,15 @@ func _on_generate_pressed():
 	
 	if existing:
 		existing.queue_free()
-		# Usamos yield en Godot 4.x para esperar la liberación
 		await get_tree().process_frame
 	
 	var rig_root = Node2D.new()
 	rig_root.name = "GeneratedRigRoot"
 	root.add_child(rig_root)
-	rig_root.owner = root # Importante para guardar en la escena
+	rig_root.owner = root
 	
 	for poly in polygons:
 		rig_root.add_child(poly)
-		poly.owner = root # Importante para guardar en la escena
+		poly.owner = root
 	
 	print("✅ Generación completa: %d partes" % polygons.size())

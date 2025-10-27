@@ -1,19 +1,17 @@
 # PolygonGenerator.gd
 extends RefCounted
 
-# Constantes deben ser redefinidas o referenciadas si el script no es un Singleton.
-# Usamos las constantes definidas en el código original para que funcione sin un Singleton externo,
-# pero si quieres usar un Singleton como en la respuesta anterior, deberías ajustar estas líneas.
+# Constantes
 const ATLAS_PIXEL_TO_UNIT_SCALE = 2.0
 const MAX_REGION_PIXELS = 400000
-const MIN_REGION_PIXELS = 30 # Mantenemos el 30 para ignorar ruido.
+const MIN_REGION_PIXELS = 30
 
 # ==============================================================================
 ## Funciones Principales
 # ==============================================================================
 
-func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture, seeds: Dictionary, polygon_epsilon: float) -> Array[Polygon2D]:
-	var generated_polygons: Array[Polygon2D] = []
+func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture, seeds: Dictionary, polygon_epsilon: float) -> Array:
+	var generated_polygons: Array = []
 	if not atlas_image:
 		push_error("Atlas image is not set.")
 		return []
