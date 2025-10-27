@@ -29,7 +29,7 @@ var _new_part_dialog: AcceptDialog = null
 # ==============================================================================
 
 func _ready():
-	# CONEXIONES CORREGIDAS
+	# CONEXIONES
 	$FileDialog.file_selected.connect(_on_file_selected)
 	
 	# Botones en $HBoxContainer
@@ -68,7 +68,6 @@ func _update_part_option_button():
 		option_button.add_item(part_name)
 
 func _on_part_name_added(new_name: String, all_parts: Array):
-	print("📝 Nueva parte añadida desde manager: ", new_name)
 	_update_part_option_button()
 	
 	# Seleccionar automáticamente la nueva parte
@@ -131,6 +130,10 @@ func _create_new_part_dialog():
 	line_edit.name = "NewPartNameEdit"
 	line_edit.placeholder_text = "ej: ala_izquierda, tercer_ojo"
 	line_edit.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	
+	# Conectar el evento de tecla Enter
+	line_edit.text_submitted.connect(_on_new_part_text_submitted)
+	
 	container.add_child(line_edit)
 	
 	_new_part_dialog.add_child(container)
@@ -142,15 +145,18 @@ func _create_new_part_dialog():
 	add_child(_new_part_dialog)
 
 func _on_add_new_part_pressed():
-	var line_edit = _new_part_dialog.find_child("NewPartNameEdit")
+	var line_edit = find_child("NewPartNameEdit", true, false)
 	if line_edit:
 		line_edit.text = ""
 		line_edit.grab_focus()
 	
 	_new_part_dialog.popup_centered()
 
+func _on_new_part_text_submitted(new_text: String):
+	_on_new_part_confirmed()
+
 func _on_new_part_confirmed():
-	var line_edit = _new_part_dialog.find_child("NewPartNameEdit")
+	var line_edit = find_child("NewPartNameEdit", true, false)
 	if not line_edit: 
 		return
 	
