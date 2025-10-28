@@ -45,8 +45,20 @@ text = " + "
 
 [node name="PartNameOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
 layout_mode = 2
-size_flags_horizontal = 3
 selected = 0
+item_count = 6
+popup/item_0/text = "torso"
+popup/item_0/id = 0
+popup/item_1/text = "head"
+popup/item_1/id = 1
+popup/item_2/text = "left_arm"
+popup/item_2/id = 2
+popup/item_3/text = "right_arm"
+popup/item_3/id = 3
+popup/item_4/text = "left_leg"
+popup/item_4/id = 4
+popup/item_5/text = "right_leg"
+popup/item_5/id = 5
 
 [node name="EpsilonHBox" type="HBoxContainer" parent="RiggingDock"]
 layout_mode = 2
@@ -57,12 +69,12 @@ layout_mode = 2
 text = "Epsilon: 0.10"
 
 [node name="EpsilonSlider" type="HSlider" parent="RiggingDock/EpsilonHBox"]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-size_flags_horizontal = 3
 min_value = 0.01
 max_value = 5.0
 step = 0.01
-value = 0.1
+value = 0.09999999999999999
 
 [node name="TextureRect" type="TextureRect" parent="RiggingDock"]
 custom_minimum_size = Vector2(300, 300)
