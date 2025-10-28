@@ -13,39 +13,39 @@ const MAX_REGION_PIXELS = 400000
 
 # GETTER
 func get_part_names() -> Array:
-    return _part_names.duplicate()  # Devolver copia para evitar modificaciones externas
+	return _part_names.duplicate()  # Devolver copia para evitar modificaciones externas
 
 # SETTER (con emisión de señal)
 func add_part_name(name: String):
-    print("[PartListManager] 🔄 Iniciando add_part_name con: '", name, "'")
-    
-    var clean_name = name.strip_edges().to_lower().replace(" ", "_")
-    print("[PartListManager] 🔄 Nombre limpio: '", clean_name, "'")
-    
-    # Validar nombre
-    if clean_name.is_empty():
-        push_warning("El nombre de la parte no puede estar vacío.")
-        print("[PartListManager] ❌ Nombre vacío rechazado")
-        return false
-        
-    if clean_name in _part_names:
-        push_warning("La parte '%s' ya existe." % clean_name)
-        print("[PartListManager] ❌ Nombre duplicado rechazado: '", clean_name, "'")
-        print("[PartListManager] 📋 Partes actuales: ", _part_names)
-        return false
-    
-    # Añadir y emitir señal
-    _part_names.append(clean_name)
-    print("[PartListManager] ✅ Nueva parte añadida: ", clean_name)
-    print("[PartListManager] 📋 Lista actualizada: ", _part_names)
-    
-    # EMITIR SEÑAL - ¡Esto es crucial!
-    part_name_added.emit(clean_name, _part_names.duplicate())
-    print("[PartListManager] 📢 Señal part_name_added emitida")
-    
-    return true
+	print("[PartListManager] 🔄 Iniciando add_part_name con: '", name, "'")
+	
+	var clean_name = name.strip_edges().to_lower().replace(" ", "_")
+	print("[PartListManager] 🔄 Nombre limpio: '", clean_name, "'")
+	
+	# Validar nombre
+	if clean_name.is_empty():
+		push_warning("El nombre de la parte no puede estar vacío.")
+		print("[PartListManager] ❌ Nombre vacío rechazado")
+		return false
+		
+	if clean_name in _part_names:
+		push_warning("La parte '%s' ya existe." % clean_name)
+		print("[PartListManager] ❌ Nombre duplicado rechazado: '", clean_name, "'")
+		print("[PartListManager] 📋 Partes actuales: ", _part_names)
+		return false
+	
+	# Añadir y emitir señal
+	_part_names.append(clean_name)
+	print("[PartListManager] ✅ Nueva parte añadida: ", clean_name)
+	print("[PartListManager] 📋 Lista actualizada: ", _part_names)
+	
+	# EMITIR SEÑAL - ¡Esto es crucial!
+	part_name_added.emit(clean_name, _part_names.duplicate())
+	print("[PartListManager] 📢 Señal part_name_added emitida")
+	
+	return true
 
 # Función para resetear a valores por defecto
 func reset_to_default():
-    _part_names = DEFAULT_PART_NAMES.duplicate()
-    part_name_added.emit("", _part_names.duplicate())
+	_part_names = DEFAULT_PART_NAMES.duplicate()
+	part_name_added.emit("", _part_names.duplicate())
