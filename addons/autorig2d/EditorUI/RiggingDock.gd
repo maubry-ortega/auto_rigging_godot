@@ -9,6 +9,10 @@ var generator = PolygonGenerator.new()
 const PartListManager = preload("res://addons/autorig2d/core/PartListManager.gd")
 var part_manager = PartListManager.new()
 
+# NUEVOS MÓDULOS
+const HumanoidBuilder = preload("res://addons/autorig2d/core/HumanoidBuilder.gd")
+const WeightingEngine = preload("res://addons/autorig2d/core/WeightingEngine.gd")
+
 # Variables de estado
 var atlas_path: String = ""
 var atlas_image: Image
@@ -298,8 +302,99 @@ func _on_generate_pressed():
 	root.add_child(rig_root)
 	rig_root.owner = root
 	
+	# CORREGIDO: Crear esqueleto con jerarquía correcta
+	print("\n🦴 Construyendo esqueleto...")
+	var humanoid_builder = HumanoidBuilder.new()
+	var skeleton = humanoid_builder.build_complete_rig(seeds, atlas_image.get_size())
+	
+	# Añadir esqueleto como nodo INDEPENDIENTE
+	rig_root.add_child(skeleton)
+	skeleton.owner = root
+	
+	# CORREGIDO: Asignar ownership a TODOS los huesos después de añadir al árbol
+	_assign_bone_ownership(skeleton, root)
+	
+	# CORREGIDO: Configurar rutas de skeleton en los polígonos ANTES de añadirlos
 	for poly in polygons:
+		# Configurar la ruta del skeleton antes de añadir al árbol
+		poly.skeleton = NodePath("../" + skeleton.name)
 		rig_root.add_child(poly)
 		poly.owner = root
 	
-	print("✅ Generación completa: %d partes" % polygons.size())
+	# Asignar pesos básicos a los polígonos
+	print("\n⚖️ Asignando pesos...")
+	var weighting_engine = WeightingEngine.new()
+	weighting_engine.assign_weights_to_polygons(polygons, skeleton)
+	
+	print("✅ Generación completa: %d partes con esqueleto básico" % polygons.size())
+	
+	# Crear AnimationPlayer básico para pruebas
+	_create_test_animation_player(rig_root, skeleton)
+	
+	# Mostrar información de debug
+	_debug_rig_info(rig_root, skeleton, polygons)
+
+# NUEVA FUNCIÓN PARA ASIGNAR OWNERSHIP
+func _assign_bone_ownership(node: Node, owner_node: Node):
+	for child in node.get_children():
+		child.owner = owner_node
+		_assign_bone_ownership(child, owner_node)
+func _create_test_animation_player(rig_root: Node2D, skeleton: Skeleton2D):
+	# Crear un AnimationPlayer básico para probar la deformación
+	var anim_player = AnimationPlayer.new()
+	anim_player.name = "TestAnimations"
+	rig_root.add_child(anim_player)
+	anim_player.owner = rig_root.owner
+	
+	# Crear animación simple de prueba
+	var animation = Animation.new()
+	animation.length = 2.0
+	animation.loop_mode = Animation.LOOP_LINEAR
+	
+	# Añadir tracks para rotar brazos
+	var bones = _collect_all_bones(skeleton)
+	for bone in bones:
+		if "arm" in bone.name and not "end" in bone.name and not "tip" in bone.name:
+			var track_idx = animation.add_track(Animation.TYPE_VALUE)
+			animation.track_set_path(track_idx, str(skeleton.get_path_to(bone)) + ":rotation")
+			
+			# Keyframes para rotación
+			animation.track_insert_key(track_idx, 0.0, 0.0)
+			animation.track_insert_key(track_idx, 1.0, deg_to_rad(45))  # 45 grados
+			animation.track_insert_key(track_idx, 2.0, 0.0)
+	
+	# CORRECCIÓN: En Godot 4.x se usa add_animation_library en lugar de add_animation
+	var anim_library = AnimationLibrary.new()
+	anim_library.add_animation("test_rotation", animation)
+	anim_player.add_animation_library("", anim_library)
+	anim_player.current_animation = "test_rotation"
+	
+	print("🎬 AnimationPlayer creado con animación de prueba 'test_rotation'")
+
+func _debug_rig_info(rig_root: Node2D, skeleton: Skeleton2D, polygons: Array):
+	print("\n🔍 Información del Rig Generado:")
+	print("  Nodo raíz: ", rig_root.name)
+	print("  Esqueleto: ", skeleton.name)
+	print("  Polígonos: ", polygons.size())
+	
+	print("\n📋 Estructura del Esqueleto:")
+	var bones = _collect_all_bones(skeleton)
+	for bone in bones:
+		var parent_name = bone.get_parent().name if bone.get_parent() else "ROOT"
+		print("  🦴 %s → Padre: %s | Pos: %s" % [bone.name, parent_name, bone.position])
+	
+	print("\n📋 Polígonos generados:")
+	for poly in polygons:
+		var has_skeleton = poly.skeleton != NodePath()
+		var skeleton_path = poly.skeleton if has_skeleton else "NONE"
+		print("  📐 %s | Skeleton: %s | Ruta: %s | Vértices: %d" % [poly.name, has_skeleton, skeleton_path, poly.polygon.size()])
+
+func _collect_all_bones(node: Node) -> Array:
+	var bones = []
+	if node is Bone2D:
+		bones.append(node)
+	
+	for child in node.get_children():
+		bones.append_array(_collect_all_bones(child))
+	
+	return bones
