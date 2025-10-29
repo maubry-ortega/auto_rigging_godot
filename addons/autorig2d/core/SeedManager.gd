@@ -46,16 +46,25 @@ func _get_texture_mapping_data():
 	var rect = ui.get_node("TextureRect")
 	var tex_size = ui.atlas_image.get_size()
 	var rect_size = rect.get_size()
-	var tex_aspect = tex_size.x / tex_size.y
+
+	if rect_size.x <= 0 or rect_size.y <= 0 or tex_size.x <= 0 or tex_size.y <= 0:
+		return null
+
+	var tex_aspect = float(tex_size.x) / tex_size.y
 	var rect_aspect = rect_size.x / rect_size.y
 	var draw_size = Vector2()
 	var offset = Vector2()
+
 	if tex_aspect > rect_aspect:
 		draw_size.x = rect_size.x
 		draw_size.y = rect_size.x / tex_aspect
-		offset.y = (rect_size.y - draw_size.y)/2
+		offset.y = (rect_size.y - draw_size.y) / 2.0
 	else:
 		draw_size.y = rect_size.y
 		draw_size.x = rect_size.y * tex_aspect
-		offset.x = (rect_size.x - draw_size.x)/2
-	return {"tex_size": tex_size,"draw_size":draw_size,"offset":offset}
+		offset.x = (rect_size.x - draw_size.x) / 2.0
+
+	if draw_size.x <= 0 or draw_size.y <= 0:
+		return null
+
+	return {"tex_size": tex_size, "draw_size": draw_size, "offset": offset}

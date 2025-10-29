@@ -12,6 +12,46 @@ data = {
 [sub_resource type="ImageTexture" id="ImageTexture_rqbqh"]
 image = SubResource("Image_onbmf")
 
+[sub_resource type="Animation" id="Animation_rqbqh"]
+length = 5.0
+loop_mode = 1
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.001, 0.98, 2, 3, 5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(536.67816, -267), Vector2(553.67816, -110), Vector2(542.67816, 164), Vector2(342.67816, -287), Vector2(45.67816, -113), Vector2(790.67816, -2)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.98, 2, 3, 4.01),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [0.0, 0.0, 1.1728612, 0.0, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:scale")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.001, 0.98, 2, 3, 4.01, 5),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector2(1, 1), Vector2(1, 1), Vector2(2, 2), Vector2(1, 1), Vector2(1.5, 1.5), Vector2(1, 1), Vector2(3, 3)]
+}
+
 [sub_resource type="Animation" id="Animation_onbmf"]
 resource_name = "cabeza"
 length = 4.0
@@ -54,45 +94,6 @@ tracks/2/keys = {
 "values": [Vector2(1, 1), Vector2(1.5, 1.5), Vector2(2, 2), Vector2(1, 1), Vector2(1, 1)]
 }
 
-[sub_resource type="Animation" id="Animation_rqbqh"]
-length = 0.001
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:position")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(536.67816, -267)]
-}
-tracks/1/type = "value"
-tracks/1/imported = false
-tracks/1/enabled = true
-tracks/1/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:rotation")
-tracks/1/interp = 1
-tracks/1/loop_wrap = true
-tracks/1/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [0.0]
-}
-tracks/2/type = "value"
-tracks/2/imported = false
-tracks/2/enabled = true
-tracks/2/path = NodePath("../AutoRigSkeleton/torso_bone/head_bone:scale")
-tracks/2/interp = 1
-tracks/2/loop_wrap = true
-tracks/2/keys = {
-"times": PackedFloat32Array(0),
-"transitions": PackedFloat32Array(1),
-"update": 0,
-"values": [Vector2(1, 1)]
-}
-
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_phpne"]
 _data = {
 &"RESET": SubResource("Animation_rqbqh"),
@@ -104,6 +105,7 @@ _data = {
 [node name="GeneratedRigRoot" type="Node2D" parent="."]
 
 [node name="AutoRigSkeleton" type="Skeleton2D" parent="GeneratedRigRoot"]
+visible = false
 
 [node name="torso_bone" type="Bone2D" parent="GeneratedRigRoot/AutoRigSkeleton"]
 position = Vector2(445.32184, 69)
@@ -129,6 +131,22 @@ rest = Transform2D(1, 0, 0, 1, 0, 0)
 position = Vector2(17.666668, 435)
 rest = Transform2D(1, 0, 0, 1, 0, 0)
 
+[node name="left_arm" type="Polygon2D" parent="GeneratedRigRoot"]
+position = Vector2(-24, -57)
+texture = SubResource("ImageTexture_rqbqh")
+skeleton = NodePath("../AutoRigSkeleton")
+polygon = PackedVector2Array(37, 1, 32, 4, 31, 4, 28, 12, 28, 23, 23, 25, 23, 26, 15, 13, 15, 12, 7, 12, 2, 18, 1, 18, 5, 80, 6, 80, 2, 114, 2, 132, 7, 170, 8, 170, 3, 178, 2, 178, 1, 186, 0, 186, 1, 234, 1, 245, 5, 257, 5, 261, 18, 287, 19, 287, 23, 301, 23, 303, 36, 316, 36, 317, 42, 319, 42, 320, 58, 318, 60, 318, 61, 310, 61, 308, 70, 313, 70, 314, 80, 313, 82, 313, 96, 292, 97, 292, 100, 277, 101, 277, 96, 263, 96, 261, 86, 252, 85, 252, 83, 242, 83, 238, 77, 226, 76, 226, 70, 192, 70, 188, 56, 166, 55, 166, 55, 161, 54, 161, 60, 143, 61, 143, 68, 107, 68, 102, 79, 70, 80, 70, 81, 65, 81, 55, 78, 51, 78, 47, 85, 35, 85, 24, 78, 14, 74, 14, 64, 19, 62, 19, 58, 25, 55, 25, 51, 8, 51, 6, 44, 1, 44, 0, 37, 0)
+uv = PackedVector2Array(223, 33, 218, 36, 217, 36, 214, 44, 214, 55, 209, 57, 209, 58, 201, 45, 201, 44, 193, 44, 188, 50, 187, 50, 191, 112, 192, 112, 188, 146, 188, 164, 193, 202, 194, 202, 189, 210, 188, 210, 187, 218, 186, 218, 187, 266, 187, 277, 191, 289, 191, 293, 204, 319, 205, 319, 209, 333, 209, 335, 222, 348, 222, 349, 228, 351, 228, 352, 244, 350, 246, 350, 247, 342, 247, 340, 256, 345, 256, 346, 266, 345, 268, 345, 282, 324, 283, 324, 286, 309, 287, 309, 282, 295, 282, 293, 272, 284, 271, 284, 269, 274, 269, 270, 263, 258, 262, 258, 256, 224, 256, 220, 242, 198, 241, 198, 241, 193, 240, 193, 246, 175, 247, 175, 254, 139, 254, 134, 265, 102, 266, 102, 267, 97, 267, 87, 264, 83, 264, 79, 271, 67, 271, 56, 264, 46, 260, 46, 250, 51, 248, 51, 244, 57, 241, 57, 237, 40, 237, 38, 230, 33, 230, 32, 223, 32)
+bones = ["torso_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/head_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_arm_bone", PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "torso_bone/right_arm_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_leg_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/right_leg_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)]
+metadata/associated_bone = &"left_arm_bone"
+metadata/skinning_ready = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="GeneratedRigRoot/left_arm"]
+libraries = {
+&"": SubResource("AnimationLibrary_phpne")
+}
+autoplay = "cabeza"
+
 [node name="torso" type="Polygon2D" parent="GeneratedRigRoot"]
 position = Vector2(-89, -81)
 texture = SubResource("ImageTexture_rqbqh")
@@ -150,7 +168,7 @@ metadata/associated_bone = &"head_bone"
 metadata/skinning_ready = true
 
 [node name="right_arm" type="Polygon2D" parent="GeneratedRigRoot"]
-position = Vector2(-40, -68)
+position = Vector2(-49, -52)
 texture = SubResource("ImageTexture_rqbqh")
 skeleton = NodePath("../AutoRigSkeleton")
 polygon = PackedVector2Array(54, 1, 46, 6, 45, 6, 42, 16, 42, 24, 39, 25, 39, 26, 35, 24, 34, 24, 29, 13, 29, 12, 26, 11, 21, 11, 14, 17, 13, 17, 13, 88, 6, 128, 5, 128, 6, 154, 6, 161, 7, 162, 9, 162, 13, 174, 13, 176, 8, 181, 7, 181, 4, 193, 3, 193, 1, 229, 0, 229, 2, 264, 2, 272, 14, 301, 15, 301, 17, 314, 17, 318, 33, 336, 33, 337, 39, 339, 39, 340, 46, 338, 46, 337, 49, 339, 55, 339, 59, 333, 59, 329, 69, 335, 69, 336, 78, 335, 81, 335, 96, 316, 97, 316, 102, 304, 103, 304, 103, 288, 91, 270, 90, 270, 83, 242, 82, 242, 81, 225, 81, 215, 77, 198, 77, 194, 65, 174, 64, 174, 69, 148, 69, 144, 93, 78, 94, 78, 94, 55, 103, 39, 103, 31, 100, 25, 100, 23, 94, 20, 94, 19, 80, 24, 78, 24, 73, 30, 71, 30, 70, 14, 66, 6, 66, 4, 61, 1, 61, 0, 54, 0)
@@ -160,6 +178,7 @@ metadata/associated_bone = &"right_arm_bone"
 metadata/skinning_ready = true
 
 [node name="left_leg" type="Polygon2D" parent="GeneratedRigRoot"]
+visible = false
 position = Vector2(-56, -20)
 texture = SubResource("ImageTexture_rqbqh")
 skeleton = NodePath("../AutoRigSkeleton")
@@ -170,7 +189,8 @@ metadata/associated_bone = &"left_leg_bone"
 metadata/skinning_ready = true
 
 [node name="right_leg" type="Polygon2D" parent="GeneratedRigRoot"]
-position = Vector2(-49, -30)
+visible = false
+position = Vector2(-165, 48)
 texture = SubResource("ImageTexture_rqbqh")
 skeleton = NodePath("../AutoRigSkeleton")
 polygon = PackedVector2Array(58, 1, 48, 4, 46, 4, 40, 11, 39, 11, 36, 61, 36, 79, 13, 112, 12, 112, 7, 126, 6, 126, 6, 201, 11, 213, 11, 215, 6, 227, 5, 227, 3, 241, 2, 241, 4, 254, 4, 262, 1, 268, 0, 268, 0, 287, 11, 290, 11, 291, 85, 295, 108, 295, 136, 293, 144, 293, 150, 289, 151, 289, 153, 283, 154, 283, 151, 265, 151, 263, 139, 254, 138, 254, 137, 242, 137, 236, 132, 223, 132, 220, 126, 215, 126, 214, 110, 208, 99, 208, 78, 177, 77, 177, 76, 170, 76, 139, 88, 110, 88, 91, 83, 87, 83, 86, 75, 88, 75, 86, 79, 70, 80, 70, 79, 61, 79, 52, 90, 35, 90, 25, 88, 19, 88, 15, 83, 9, 83, 8, 71, 2, 71, 1, 58, 0)
@@ -178,19 +198,3 @@ uv = PackedVector2Array(85, 392, 75, 395, 73, 395, 67, 402, 66, 402, 63, 452, 63
 bones = ["torso_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/head_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_arm_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/right_arm_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_leg_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/right_leg_bone", PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)]
 metadata/associated_bone = &"right_leg_bone"
 metadata/skinning_ready = true
-
-[node name="left_arm" type="Polygon2D" parent="GeneratedRigRoot"]
-position = Vector2(-24, -57)
-texture = SubResource("ImageTexture_rqbqh")
-skeleton = NodePath("../AutoRigSkeleton")
-polygon = PackedVector2Array(37, 1, 32, 4, 31, 4, 28, 12, 28, 23, 23, 25, 23, 26, 15, 13, 15, 12, 7, 12, 2, 18, 1, 18, 5, 80, 6, 80, 2, 114, 2, 132, 7, 170, 8, 170, 3, 178, 2, 178, 1, 186, 0, 186, 1, 234, 1, 245, 5, 257, 5, 261, 18, 287, 19, 287, 23, 301, 23, 303, 36, 316, 36, 317, 42, 319, 42, 320, 58, 318, 60, 318, 61, 310, 61, 308, 70, 313, 70, 314, 80, 313, 82, 313, 96, 292, 97, 292, 100, 277, 101, 277, 96, 263, 96, 261, 86, 252, 85, 252, 83, 242, 83, 238, 77, 226, 76, 226, 70, 192, 70, 188, 56, 166, 55, 166, 55, 161, 54, 161, 60, 143, 61, 143, 68, 107, 68, 102, 79, 70, 80, 70, 81, 65, 81, 55, 78, 51, 78, 47, 85, 35, 85, 24, 78, 14, 74, 14, 64, 19, 62, 19, 58, 25, 55, 25, 51, 8, 51, 6, 44, 1, 44, 0, 37, 0)
-uv = PackedVector2Array(223, 33, 218, 36, 217, 36, 214, 44, 214, 55, 209, 57, 209, 58, 201, 45, 201, 44, 193, 44, 188, 50, 187, 50, 191, 112, 192, 112, 188, 146, 188, 164, 193, 202, 194, 202, 189, 210, 188, 210, 187, 218, 186, 218, 187, 266, 187, 277, 191, 289, 191, 293, 204, 319, 205, 319, 209, 333, 209, 335, 222, 348, 222, 349, 228, 351, 228, 352, 244, 350, 246, 350, 247, 342, 247, 340, 256, 345, 256, 346, 266, 345, 268, 345, 282, 324, 283, 324, 286, 309, 287, 309, 282, 295, 282, 293, 272, 284, 271, 284, 269, 274, 269, 270, 263, 258, 262, 258, 256, 224, 256, 220, 242, 198, 241, 198, 241, 193, 240, 193, 246, 175, 247, 175, 254, 139, 254, 134, 265, 102, 266, 102, 267, 97, 267, 87, 264, 83, 264, 79, 271, 67, 271, 56, 264, 46, 260, 46, 250, 51, 248, 51, 244, 57, 241, 57, 237, 40, 237, 38, 230, 33, 230, 32, 223, 32)
-bones = ["torso_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/head_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_arm_bone", PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1), "torso_bone/right_arm_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/left_leg_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), "torso_bone/right_leg_bone", PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)]
-metadata/associated_bone = &"left_arm_bone"
-metadata/skinning_ready = true
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="GeneratedRigRoot/left_arm"]
-libraries = {
-&"": SubResource("AnimationLibrary_phpne")
-}
-autoplay = "cabeza"
