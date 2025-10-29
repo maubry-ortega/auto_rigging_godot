@@ -12,6 +12,7 @@ const AtlasLoader = preload("uid://cosxar5jkhmk7")
 const SeedManager = preload("uid://cq7neflhr0lsd")
 const RigGenerator = preload("uid://k7dfof5c0asq")
 const PartDialogManager = preload("uid://c0rs41p7wmh1u")
+const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
 
 # Instancias
 var generator = PolygonGenerator.new()
@@ -20,6 +21,7 @@ var atlas_loader = AtlasLoader.new()
 var seed_manager = SeedManager.new()
 var rig_generator = RigGenerator.new()
 var part_dialog = PartDialogManager.new()
+var coordinate_manager = CoordinateManager.new()
 
 # Estado
 var _new_part_dialog
@@ -34,10 +36,11 @@ var polygon_epsilon: float = 0.1
 func _ready():
 	await get_tree().process_frame
 
+	# Inicializar todos los módulos con las dependencias necesarias
 	part_dialog.initialize_dialog(self, part_manager)
-	atlas_loader.initialize(self)
-	seed_manager.initialize(self)
-	rig_generator.initialize(self, generator, atlas_loader, seed_manager, HumanoidBuilder, WeightingEngine)
+	atlas_loader.initialize(self, coordinate_manager)
+	seed_manager.initialize(self, coordinate_manager)
+	rig_generator.initialize(self, generator, atlas_loader, seed_manager, HumanoidBuilder, WeightingEngine, coordinate_manager)
 
 	# Conexiones UI
 	$FileDialog.file_selected.connect(atlas_loader.on_file_selected)
@@ -58,3 +61,4 @@ func _ready():
 		part_dialog.on_epsilon_slider_visual_update(polygon_epsilon)
 
 	part_manager.part_name_added.connect(part_dialog.on_part_name_added)
+

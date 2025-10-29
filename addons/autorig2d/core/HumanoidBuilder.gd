@@ -14,14 +14,14 @@ const HIERARCHY_MAP := {
 	"right_leg": []
 }
 
-func build_complete_rig(seeds: Dictionary, atlas_size: Vector2) -> Skeleton2D:
+func build_complete_rig(origins: Dictionary, seeds: Dictionary, atlas_size: Vector2) -> Skeleton2D:
 	print("\n🦴 Iniciando construcción del esqueleto...")
 	
 	var skeleton := Skeleton2D.new()
 	skeleton.name = "AutoRigSkeleton"
 
-	# Crear huesos desde las seeds
-	var bones := _create_bones_from_seeds(seeds, atlas_size)
+	# Crear huesos desde los orígenes y las semillas
+	var bones := _create_bones(origins, seeds, atlas_size)
 
 	# Construir la jerarquía lógica
 	_build_skeleton_hierarchy(skeleton, bones)
@@ -30,13 +30,27 @@ func build_complete_rig(seeds: Dictionary, atlas_size: Vector2) -> Skeleton2D:
 	return skeleton
 
 
-func _create_bones_from_seeds(seeds: Dictionary, atlas_size: Vector2) -> Dictionary:
+func _create_bones(origins: Dictionary, seeds: Dictionary, atlas_size: Vector2) -> Dictionary:
 	var bones := {}
-	for part_name in seeds.keys():
+	for part_name in origins.keys():
 		var bone := Bone2D.new()
 		bone.name = "%s_bone" % part_name
-		bone.position = Vector2(seeds[part_name])
-		bone.rest = Transform2D.IDENTITY
+		
+		# La posición del hueso es el origen del polígono para mantener la alineación
+		bone.position = origins[part_name]
+		
+		# Usar las semillas para definir la rotación y la longitud
+		if seeds.has(part_name):
+			var points = seeds[part_name]
+			if points.size() >= 2:
+				var start_point = points[0]
+				var end_point = points[1]
+				var diff = end_point - start_point
+				bone.rotation = diff.angle()
+				bone.length = diff.length()
+
+		bone.rest = Transform2D(bone.rotation, Vector2.ZERO)
+		
 		bones[part_name] = bone
 		print("  🦴 Hueso creado: %s en %s" % [bone.name, bone.position])
 	return bones

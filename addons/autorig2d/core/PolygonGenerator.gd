@@ -2,7 +2,7 @@
 extends RefCounted
 
 # Constantes
-const ATLAS_PIXEL_TO_UNIT_SCALE = 2.0
+const ATLAS_PIXEL_TO_UNIT_SCALE = 1.0
 const MAX_REGION_PIXELS = 400000
 const MIN_REGION_PIXELS = 30
 
@@ -10,11 +10,12 @@ const MIN_REGION_PIXELS = 30
 ## Funciones Principales
 # ==============================================================================
 
-func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture, seeds: Dictionary, polygon_epsilon: float) -> Array:
+func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture, seeds: Dictionary, polygon_epsilon: float) -> Dictionary:
 	var generated_polygons: Array = []
+	var part_origins: Dictionary = {}
 	if not atlas_image:
 		push_error("Atlas image is not set.")
-		return []
+		return {}
 
 	print("\n=== 🎨 Iniciando generación ===")
 	print("Atlas: ", atlas_image.get_size())
@@ -34,7 +35,11 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
 	var seed_to_region = {}
 
 	for part_name in seeds.keys():
-		var seed_pos = seeds[part_name]
+		var seed_points = seeds[part_name]
+		if seed_points.is_empty():
+			continue
+		
+		var seed_pos = seed_points[0]
 		var best_region: int = -1
 		var best_distance = INF
 
@@ -75,11 +80,12 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
 
 		if is_instance_valid(poly):
 			generated_polygons.append(poly)
+			part_origins[part_name] = poly.position
 		else:
 			print("  ❌ Fallo al crear polígono")
 
 	print("\n=== ✅ Completado: %d/%d partes ===" % [generated_polygons.size(), seeds.size()])
-	return generated_polygons
+	return {"polygons": generated_polygons, "origins": part_origins}
 
 
 # ------------------------------------------------------------------------------

@@ -6,14 +6,16 @@ var atlas_loader
 var seed_manager
 var HumanoidBuilder
 var WeightingEngine
+var coordinate_manager
 
-func initialize(ui_node, gen, atlas, seeds, hb, we):
+func initialize(ui_node, gen, atlas, seeds, hb, we, coord_manager):
 	ui = ui_node
 	generator = gen
 	atlas_loader = atlas
 	seed_manager = seeds
 	HumanoidBuilder = hb
 	WeightingEngine = we
+	coordinate_manager = coord_manager
 
 func on_generate_pressed():
 	if not atlas_loader.atlas_image:
@@ -23,10 +25,13 @@ func on_generate_pressed():
 		push_error("Agrega al menos una semilla.")
 		return
 
-	var polygons = generator.generate_body_part_polygons(atlas_loader.atlas_image, atlas_loader.atlas_texture, ui.seeds, ui.polygon_epsilon)
-	if polygons.is_empty():
+	var generation_result = generator.generate_body_part_polygons(atlas_loader.atlas_image, atlas_loader.atlas_texture, ui.seeds, ui.polygon_epsilon)
+	if generation_result.is_empty() or not generation_result.has("polygons") or generation_result.polygons.is_empty():
 		push_error("No se generaron polígonos.")
 		return
+
+	var polygons = generation_result.polygons
+	var origins = generation_result.origins
 
 	var root = ui.get_tree().edited_scene_root
 	if not is_instance_valid(root):
@@ -38,7 +43,7 @@ func on_generate_pressed():
 	root.add_child(rig_root)
 	rig_root.owner = root
 
-	var skeleton = HumanoidBuilder.new().build_complete_rig(ui.seeds, atlas_loader.atlas_image.get_size())
+	var skeleton = HumanoidBuilder.new().build_complete_rig(origins, ui.seeds, atlas_loader.atlas_image.get_size())
 	rig_root.add_child(skeleton)
 	skeleton.owner = root
 
