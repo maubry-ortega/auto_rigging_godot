@@ -76,7 +76,7 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
 
 		print("  ✅ Región: %d píxeles" % region.size())
 
-		var poly = _create_polygon_from_region(atlas_image, atlas_texture, region, part_name, polygon_epsilon)
+		var poly = _create_polygon_from_region(atlas_image, atlas_texture, region, part_name, polygon_epsilon, seeds)
 
 		if is_instance_valid(poly):
 			generated_polygons.append(poly)
@@ -190,7 +190,7 @@ func _get_distance_to_region(seed: Vector2i, region: Dictionary) -> float:
 ## Crear Polígono desde Región
 # ------------------------------------------------------------------------------
 
-func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Dictionary, part_name: String, polygon_epsilon: float) -> Polygon2D:
+func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Dictionary, part_name: String, polygon_epsilon: float, seeds: Dictionary) -> Polygon2D:
 	if pixels.is_empty():
 		return null
 	
@@ -239,18 +239,25 @@ func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Di
 	poly.name = part_name
 	poly.texture = texture
 	
-	# 7. Calcular bounds (en coordenadas del atlas)
+	# 7. Determinar el pivote
+	var pivot_point: Vector2
 	var bounds = Rect2(cleaned[0], Vector2.ZERO)
-	for point in cleaned:
-		bounds = bounds.expand(point)
+	# El pivote es el primer punto de la semilla para un control preciso
+	if seeds.has(part_name) and not seeds[part_name].is_empty():
+		pivot_point = seeds[part_name][0]
+	else:
+		# Fallback al centro geométrico si no hay semillas
+		for point in cleaned:
+			bounds = bounds.expand(point)
+		pivot_point = bounds.position + bounds.size / 2.0
+
+	# La POSICIÓN del nodo es el punto de pivote
+	poly.position = pivot_point
 	
-	# La POSICIÓN del nodo es la esquina superior izquierda del bounds
-	poly.position = bounds.position
-	
-	# 8. Contorno LOCAL (relativo a poly.position)
+	# 8. Contorno LOCAL (relativo al pivote)
 	var local_points = PackedVector2Array()
 	for point in cleaned:
-		local_points.append(point - bounds.position)
+		local_points.append(point - pivot_point)
 	
 	# 9. UVs en coordenadas del ATLAS (globales, sin restar position)
 	var uvs = PackedVector2Array()
@@ -261,6 +268,11 @@ func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Di
 	poly.uv = uvs
 	
 	# 10. Validar triangulación
+	# Para validar, necesitamos los bounds, asegurémonos de que se calculen
+	if bounds.size == Vector2.ZERO:
+		for point in cleaned:
+			bounds = bounds.expand(point)
+	
 	if not _validate_triangulation(poly, local_points, bounds.position):
 		return null
 	

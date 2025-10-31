@@ -49,12 +49,15 @@ func on_generate_pressed():
 
 	_assign_bone_ownership(skeleton, root)
 
-	WeightingEngine.new().assign_weights_to_polygons(polygons, skeleton)
-
+	# Primero añadir los polígonos a la escena
 	for poly in polygons:
-		poly.skeleton = NodePath("../"+skeleton.name)
 		rig_root.add_child(poly)
 		poly.owner = root
+		# Ahora que ambos nodos están en el árbol, podemos obtener la ruta de forma segura
+		poly.skeleton = poly.get_path_to(skeleton)
+
+	# Ahora, con todo en su sitio, asignar los pesos
+	WeightingEngine.new().assign_weights_to_polygons(polygons, skeleton)
 
 	print("✅ Rig generado completamente.")
 	_debug_rig_info(rig_root, skeleton, polygons)

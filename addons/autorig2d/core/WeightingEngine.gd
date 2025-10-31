@@ -56,34 +56,21 @@ func _find_associated_bone(part_name: String, bones: Array) -> Bone2D:
 	return null
 
 func _setup_polygon_skinning(poly: Polygon2D, skeleton: Skeleton2D, main_bone: Bone2D):
-	# 1. Encontrar el índice del hueso principal en el esqueleto
-	var all_bones = _get_all_bones(skeleton)
-	var bone_index = -1
-	for i in range(all_bones.size()):
-		if all_bones[i] == main_bone:
-			bone_index = i
-			break
+	# En Godot 4, para asignar un polígono completo a un solo hueso,
+	# el formato esperado es un array plano: [ruta_al_hueso, array_de_pesos].
 	
-	if bone_index == -1:
-		print("  ❌ No se pudo encontrar el índice para el hueso: ", main_bone.name)
-		return
+	# 1. Obtener la ruta relativa desde el polígono hasta el hueso.
+	#    Esto es crucial y requiere que ambos nodos estén en el árbol de la escena.
+	var bone_path = poly.get_path_to(main_bone)
 
-	# 2. Preparar los datos de peso (100% de influencia para el hueso principal)
-	var bone_indices = PackedInt32Array([bone_index])
-	var bone_weights = PackedFloat32Array([1.0])
-	var influence = [bone_indices, bone_weights]
-
-	# 3. Crear el array de 'bones' para el Polygon2D
-	var skinning_data = []
+	# 2. Crear un array de pesos. Cada vértice tendrá un peso de 1.0 para este hueso.
 	var vertex_count = poly.polygon.size()
-	skinning_data.resize(vertex_count)
-	for i in range(vertex_count):
-		skinning_data[i] = influence
+	var weights = PackedFloat32Array()
+	weights.resize(vertex_count)
+	weights.fill(1.0)
 
-	# 4. Asignar los pesos al polígono
+	# 3. Crear la estructura de datos final y asignarla.
+	var skinning_data = [bone_path, weights]
 	poly.bones = skinning_data
-	
-	# 5. Conectar el polígono al esqueleto (ya debería estar hecho, pero por si acaso)
-	poly.skeleton = poly.get_path_to(skeleton)
 
 	print("  ✅ '%s' conectado a esqueleto y pesos asignados al hueso '%s'" % [poly.name, main_bone.name])

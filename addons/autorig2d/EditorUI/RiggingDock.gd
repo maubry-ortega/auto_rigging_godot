@@ -61,4 +61,3 @@ func _ready():
 		part_dialog.on_epsilon_slider_visual_update(polygon_epsilon)
 
 	part_manager.part_name_added.connect(part_dialog.on_part_name_added)
-
