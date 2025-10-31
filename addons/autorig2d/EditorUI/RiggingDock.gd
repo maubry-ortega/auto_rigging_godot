@@ -27,6 +27,8 @@ var _rigging_state = preload("res://addons/autorig2d/core/RiggingState.gd").new(
 
 # Estado
 var _new_part_dialog
+var _parent_option_button: OptionButton
+var _part_option_button: OptionButton
 
 func _ready():
 	await get_tree().process_frame
@@ -34,13 +36,12 @@ func _ready():
 	# Inicializar todos los módulos con las dependencias necesarias
 	part_manager.initialize(_rigging_state)
 
-	var part_option_button = $PartNameHBox/PartNameOptionButton
+	_part_option_button = $PartNameHBox/ParentOptionButton
 	for part_name in _rigging_state.part_names:
-		part_option_button.add_item(part_name)
-	
-	if not _rigging_state.part_names.is_empty():
-		part_option_button.select(0)
-		_rigging_state.current_part_name = part_option_button.get_item_text(0)
+		_part_option_button.add_item(part_name)
+
+		_part_option_button.select(0)
+		_rigging_state.current_part_name = _part_option_button.get_item_text(0)
 		print("Default selected part: ", _rigging_state.current_part_name)
 
 	part_dialog.initialize_dialog(self, _rigging_state)
@@ -53,7 +54,8 @@ func _ready():
 	$FileDialog.file_selected.connect(self._on_file_selected)
 	$HBoxContainer/SelectAtlasButton.pressed.connect($FileDialog.popup)
 	$HBoxContainer/AddSeedButton.pressed.connect(seed_manager.on_add_seed_pressed)
-	$HBoxContainer/GenerateButton.pressed.connect(rig_generator.on_generate_pressed)
+	$HBoxContainer/GeneratePreviewButton.pressed.connect(rig_generator.on_generate_preview_pressed)
+	$HBoxContainer/FinalizeWeightsButton.pressed.connect(rig_generator.on_finalize_weights_pressed)
 	$PartNameHBox/AddNewPartButton.pressed.connect(part_dialog.on_add_new_part_pressed)
 
 	if $TextureRect:
@@ -68,12 +70,52 @@ func _ready():
 		slider.value_changed.connect(part_dialog.on_epsilon_slider_visual_update.bind($EpsilonHBox/EpsilonLabel))
 		part_dialog.on_epsilon_slider_visual_update(_rigging_state.polygon_epsilon, $EpsilonHBox/EpsilonLabel)
 		
-	part_manager.part_name_added.connect(part_dialog.on_part_name_added.bind($PartNameHBox/PartNameOptionButton))
-
-	part_option_button.item_selected.connect(func(index):
-		_rigging_state.current_part_name = part_option_button.get_item_text(index)
-		print("Selected part: ", _rigging_state.current_part_name)
+	part_manager.part_name_added.connect(func(new_name, _all_parts):
+		part_dialog.on_part_name_added(new_name, _part_option_button)
+		_update_parent_option_button()
 	)
+
+	_parent_option_button = $PartNameHBox/ParentOptionButton
+
+	_part_option_button.item_selected.connect(func(index):
+		_rigging_state.current_part_name = _part_option_button.get_item_text(index)
+		print("Selected part: ", _rigging_state.current_part_name)
+		_update_parent_option_button()
+	)
+	_parent_option_button.item_selected.connect(self._on_parent_selected)
+
+	_update_parent_option_button() # Initial population
+
+func _update_parent_option_button():
+	var part_option_button = _part_option_button
+
+	_parent_option_button.clear()
+	_parent_option_button.add_item("None", 0) # Option for no parent
+
+	var current_part_name = _rigging_state.current_part_name
+	var current_parent_index = 0
+
+	for i in range(_rigging_state.part_names.size()):
+		var part_name = _rigging_state.part_names[i]
+		if part_name != current_part_name: # A part cannot be its own parent
+			_parent_option_button.add_item(part_name, i + 1) # +1 because of 'None' at index 0
+			if _rigging_state.part_data.has(current_part_name) and _rigging_state.part_data[current_part_name].has("parent") and _rigging_state.part_data[current_part_name]["parent"] == part_name:
+				current_parent_index = i + 1
+
+	_parent_option_button.select(current_parent_index)
+
+func _on_parent_selected(index: int):
+	var selected_parent_name = _parent_option_button.get_item_text(index)
+
+	if not _rigging_state.part_data.has(_rigging_state.current_part_name):
+		_rigging_state.part_data[_rigging_state.current_part_name] = {}
+
+	if selected_parent_name == "None":
+		_rigging_state.part_data[_rigging_state.current_part_name]["parent"] = ""
+	else:
+		_rigging_state.part_data[_rigging_state.current_part_name]["parent"] = selected_parent_name
+	print("Parent for ", _rigging_state.current_part_name, ": ", _rigging_state.part_data[_rigging_state.current_part_name]["parent"])
+
 
 func _on_seeds_updated():
 	$TextureRect.queue_redraw()

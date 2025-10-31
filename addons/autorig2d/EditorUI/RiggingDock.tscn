@@ -19,9 +19,13 @@ script = ExtResource("1_gh103")
 [node name="HBoxContainer" type="HBoxContainer" parent="RiggingDock"]
 layout_mode = 2
 
-[node name="GenerateButton" type="Button" parent="RiggingDock/HBoxContainer"]
+[node name="GeneratePreviewButton" type="Button" parent="RiggingDock/HBoxContainer"]
 layout_mode = 2
-text = "Generar Rig"
+text = "Generar Previsualización"
+
+[node name="FinalizeWeightsButton" type="Button" parent="RiggingDock/HBoxContainer"]
+layout_mode = 2
+text = "Finalizar y Aplicar Pesos"
 
 [node name="SelectAtlasButton" type="Button" parent="RiggingDock/HBoxContainer"]
 layout_mode = 2
@@ -43,22 +47,22 @@ layout_mode = 2
 tooltip_text = "Añadir una nueva parte personalizada."
 text = " + "
 
-[node name="PartNameOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
+[node name="ParentOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
 layout_mode = 2
 selected = 0
 item_count = 6
-popup/item_0/text = "torso"
+popup/item_0/text = "None"
 popup/item_0/id = 0
 popup/item_1/text = "head"
-popup/item_1/id = 1
+popup/item_1/id = 2
 popup/item_2/text = "left_arm"
-popup/item_2/id = 2
+popup/item_2/id = 3
 popup/item_3/text = "right_arm"
-popup/item_3/id = 3
+popup/item_3/id = 4
 popup/item_4/text = "left_leg"
-popup/item_4/id = 4
+popup/item_4/id = 5
 popup/item_5/text = "right_leg"
-popup/item_5/id = 5
+popup/item_5/id = 6
 
 [node name="EpsilonHBox" type="HBoxContainer" parent="RiggingDock"]
 layout_mode = 2

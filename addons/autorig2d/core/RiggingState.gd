@@ -19,7 +19,8 @@ class_name RiggingState
 # You can add methods here to manipulate the state, e.g., add_part, update_seed, etc.
 
 func _init():
-	pass
+	for part_name in part_names:
+		part_data[part_name] = {"parent": ""}
 
 func add_part_name(name: String) -> bool:
 	var clean_name = name.strip_edges().to_lower().replace(" ", "_")
@@ -33,6 +34,5 @@ func add_part_name(name: String) -> bool:
 		return false
 	
 	part_names.append(clean_name)
-	# Potentially emit a signal here if other parts of the system need to react immediately
-	# For now, assume UI will observe changes to part_names array
+	part_data[clean_name] = {"parent": ""}
 	return true

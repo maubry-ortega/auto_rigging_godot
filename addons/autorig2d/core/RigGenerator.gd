@@ -13,7 +13,11 @@ func initialize(rigging_state: RiggingState, gen, hb, we, coord_manager):
 	WeightingEngine = we
 	coordinate_manager = coord_manager
 
-func on_generate_pressed():
+var _generated_rig_root: Node2D = null
+var _generated_skeleton: Skeleton2D = null
+var _generated_polygons: Array[Polygon2D] = []
+
+func on_generate_preview_pressed():
 	if _rigging_state.loaded_image_path.is_empty():
 		push_error("Carga un atlas primero.")
 		return
@@ -45,29 +49,45 @@ func on_generate_pressed():
 		push_error("No hay escena abierta en el editor.")
 		return
 
-	var rig_root = Node2D.new()
-	rig_root.name = "GeneratedRigRoot"
-	root.add_child(rig_root)
-	rig_root.owner = root
+	_generated_rig_root = Node2D.new()
+	_generated_rig_root.name = "GeneratedRigRoot"
+	root.add_child(_generated_rig_root)
+	_generated_rig_root.owner = root
 
-	var skeleton = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size())
-	rig_root.add_child(skeleton)
-	skeleton.owner = root
+	_generated_skeleton = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size())
+	_generated_rig_root.add_child(_generated_skeleton)
+	_generated_skeleton.owner = root
 
-	_assign_bone_ownership(skeleton, root)
+	_assign_bone_ownership(_generated_skeleton, root)
 
 	# Primero añadir los polígonos a la escena
+	_generated_polygons = []
 	for poly in polygons:
-		rig_root.add_child(poly)
+		_generated_rig_root.add_child(poly)
 		poly.owner = root
 		# Ahora que ambos nodos están en el árbol, podemos obtener la ruta de forma segura
-		poly.skeleton = poly.get_path_to(skeleton)
+		poly.skeleton = poly.get_path_to(_generated_skeleton)
+		_generated_polygons.append(poly)
 
-	# Ahora, con todo en su sitio, asignar los pesos
-	WeightingEngine.new().assign_weights_to_polygons(polygons, skeleton)
+	print("✅ Previsualización del Rig generada.")
+	_debug_rig_info(_generated_rig_root, _generated_skeleton, _generated_polygons)
 
-	print("✅ Rig generado completamente.")
-	_debug_rig_info(rig_root, skeleton, polygons)
+func on_finalize_weights_pressed():
+	if not is_instance_valid(_generated_rig_root) or not is_instance_valid(_generated_skeleton) or _generated_polygons.is_empty():
+		push_error("Primero genera una previsualización del rig.")
+		return
+
+	# Actualizar la pose de descanso de los huesos con sus transformaciones actuales
+	_update_bone_rests(_generated_skeleton)
+
+	WeightingEngine.new().assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	print("✅ Pesos aplicados al rig.")
+
+func _update_bone_rests(node: Node):
+	if node is Bone2D:
+		node.rest = node.transform
+	for child in node.get_children():
+		_update_bone_rests(child)
 
 func _assign_bone_ownership(node: Node, owner: Node):
 	for child in node.get_children():
