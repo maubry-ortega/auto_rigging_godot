@@ -1,34 +1,33 @@
 extends Node
 
-var ui
-var coordinate_manager
-var atlas_path: String
-var atlas_image: Image
-var atlas_texture: ImageTexture
+const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
+const RiggingState = preload("res://addons/autorig2d/core/RiggingState.gd")
 
-func initialize(ui_node, coord_manager):
-	ui = ui_node
-	coordinate_manager = coord_manager
+var _rigging_state: RiggingState
+var _coordinate_manager: CoordinateManager
+
+func initialize(rigging_state: RiggingState, coord_manager: CoordinateManager):
+	_rigging_state = rigging_state
+	_coordinate_manager = coord_manager
 
 func on_select_atlas_pressed():
-	ui.get_node("FileDialog").popup()
+	# This function should ideally emit a signal for the UI to handle file dialogs.
+	# For now, RiggingDock will directly call the FileDialog.
+	pass
 
-func on_file_selected(path: String):
-	atlas_path = path
-	ui.atlas_path = path
-	atlas_image = Image.load_from_file(path)
-	ui.atlas_image = atlas_image
+func on_file_selected(path: String, texture_rect: TextureRect) -> Dictionary:
+	_rigging_state.loaded_image_path = path
+	var atlas_image = Image.load_from_file(path)
 	if atlas_image:
-		atlas_texture = ImageTexture.create_from_image(atlas_image)
-		var texture_rect = ui.get_node("TextureRect")
-		texture_rect.texture = atlas_texture
-		texture_rect.custom_minimum_size = atlas_image.get_size()
+		var atlas_texture = ImageTexture.create_from_image(atlas_image)
 		
 		# Inicializar el gestor de coordenadas
-		coordinate_manager.initialize(texture_rect, atlas_image)
+		_coordinate_manager.initialize(texture_rect, atlas_image)
 
-		ui.seeds.clear()
-		texture_rect.queue_redraw()
+		_rigging_state.seed_data.clear()
+		# The UI will observe changes in _rigging_state.loaded_image_path and redraw
 		print("✅ Atlas:", path)
+		return {"texture": atlas_texture, "image": atlas_image}
 	else:
 		push_error("❌ Error cargando atlas: " + path)
+		return {"texture": null, "image": null}

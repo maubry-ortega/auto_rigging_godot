@@ -1,64 +1,71 @@
 extends Node
+signal seeds_updated
 
-var ui
-var coordinate_manager
+const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
+const RiggingState = preload("res://addons/autorig2d/core/RiggingState.gd")
 
-func initialize(ui_node, coord_manager):
-	ui = ui_node
-	coordinate_manager = coord_manager
+var _rigging_state: RiggingState
+var _coordinate_manager: CoordinateManager
+
+func initialize(rigging_state: RiggingState, coord_manager: CoordinateManager):
+	_rigging_state = rigging_state
+	_coordinate_manager = coord_manager
+	print("SeedManager initialized. _rigging_state is: ", _rigging_state)
 
 func on_add_seed_pressed():
-	var opt = ui.get_node("PartNameHBox/PartNameOptionButton")
-	if opt.get_selected_id() == -1:
+	print("on_add_seed_pressed called. _rigging_state is: ", _rigging_state)
+	# The UI should set _rigging_state.current_part_name before calling this.
+	if _rigging_state.current_part_name.is_empty():
 		push_error("Selecciona una parte primero.")
 		return
-	ui.current_part_name = opt.get_item_text(opt.get_selected_id())
-	ui.adding_seeds = true
+	_rigging_state.adding_seeds = true # Assuming RiggingState will have this property
 	# Reiniciar las semillas para esta parte
-	ui.seeds[ui.current_part_name] = []
-	ui.get_node("TextureRect").queue_redraw()
-	print("\n📍 Agregar semilla para:", ui.current_part_name)
+	_rigging_state.seed_data[_rigging_state.current_part_name] = []
+	# The TextureRect redraw will be handled by the UI observing RiggingState changes
+	print("\n📍 Agregar semilla para:", _rigging_state.current_part_name)
 
 func on_texture_gui_input(event):
-	if ui.adding_seeds and event is InputEventMouseButton and event.pressed:
-		if not ui.atlas_image:
+	if _rigging_state.adding_seeds and event is InputEventMouseButton and event.pressed:
+		if _rigging_state.loaded_image_path.is_empty(): # Check if an image is loaded
 			push_error("No hay atlas cargado.")
-			ui.adding_seeds = false
+			_rigging_state.adding_seeds = false
 			return
 
-		var canvas_pos = coordinate_manager.ui_to_canvas(event.position)
+		var canvas_pos = _coordinate_manager.ui_to_canvas(event.position)
 
-		if not ui.seeds.has(ui.current_part_name):
-			ui.seeds[ui.current_part_name] = []
+		if not _rigging_state.seed_data.has(_rigging_state.current_part_name):
+			_rigging_state.seed_data[_rigging_state.current_part_name] = []
 		
-		ui.seeds[ui.current_part_name].append(canvas_pos)
+		_rigging_state.seed_data[_rigging_state.current_part_name].append(canvas_pos)
 		
 		# Detener después de 2 puntos
-		if ui.seeds[ui.current_part_name].size() >= 2:
-			ui.adding_seeds = false
+		if _rigging_state.seed_data[_rigging_state.current_part_name].size() >= 2:
+			_rigging_state.adding_seeds = false
 
-		ui.get_node("TextureRect").queue_redraw()
-		print("  ✅ %s → %s" % [ui.current_part_name, canvas_pos])
+		# The UI will observe changes in _rigging_state.seed_data and redraw
+		print("  ✅ %s → %s" % [_rigging_state.current_part_name, canvas_pos])
+		seeds_updated.emit()
 
-func on_texture_rect_draw():
-	if not ui.atlas_image: return
+func on_texture_rect_draw(rect: Control):
+	# TODO: This drawing logic should ideally be moved to the UI (e.g., RiggingDock.gd)
+	#       which observes changes in RiggingState.seed_data.
 	
-	var rect = ui.get_node("TextureRect")
+	if _rigging_state.loaded_image_path.is_empty(): return
 	
-	for part in ui.seeds.keys():
-		var points = ui.seeds[part]
+	for part in _rigging_state.seed_data.keys():
+		var points = _rigging_state.seed_data[part]
 		if points.is_empty():
 			continue
 
 		# Dibujar puntos
 		for canvas_point in points:
-			var ui_pos = coordinate_manager.canvas_to_ui(canvas_point)
+			var ui_pos = _coordinate_manager.canvas_to_ui(canvas_point)
 			rect.draw_circle(ui_pos, 4, Color.RED)
 		
 		# Dibujar línea y etiqueta
-		var first_pos_ui = coordinate_manager.canvas_to_ui(points[0])
-		rect.draw_string(ui.get_theme_font("font","Label"), first_pos_ui + Vector2(8,5), part, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+		var first_pos_ui = _coordinate_manager.canvas_to_ui(points[0])
+		rect.draw_string(rect.get_theme_font("font","Label"), first_pos_ui + Vector2(8,5), part, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
 		
 		if points.size() >= 2:
-			var second_pos_ui = coordinate_manager.canvas_to_ui(points[1])
+			var second_pos_ui = _coordinate_manager.canvas_to_ui(points[1])
 			rect.draw_line(first_pos_ui, second_pos_ui, Color.YELLOW, 2.0)

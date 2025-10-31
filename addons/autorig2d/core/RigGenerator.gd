@@ -1,31 +1,33 @@
 extends Node
 
-var ui
+var _rigging_state: RiggingState
 var generator
-var atlas_loader
-var seed_manager
 var HumanoidBuilder
 var WeightingEngine
 var coordinate_manager
 
-func initialize(ui_node, gen, atlas, seeds, hb, we, coord_manager):
-	ui = ui_node
+func initialize(rigging_state: RiggingState, gen, hb, we, coord_manager):
+	_rigging_state = rigging_state
 	generator = gen
-	atlas_loader = atlas
-	seed_manager = seeds
 	HumanoidBuilder = hb
 	WeightingEngine = we
 	coordinate_manager = coord_manager
 
 func on_generate_pressed():
-	if not atlas_loader.atlas_image:
+	if _rigging_state.loaded_image_path.is_empty():
 		push_error("Carga un atlas primero.")
 		return
-	if ui.seeds.is_empty():
+	if _rigging_state.seed_data.is_empty():
 		push_error("Agrega al menos una semilla.")
 		return
 
-	var generation_result = generator.generate_body_part_polygons(atlas_loader.atlas_image, atlas_loader.atlas_texture, ui.seeds, ui.polygon_epsilon)
+	var atlas_image = Image.load_from_file(_rigging_state.loaded_image_path)
+	if not atlas_image:
+		push_error("Error cargando la imagen del atlas desde la ruta: " + _rigging_state.loaded_image_path)
+		return
+	var atlas_texture = ImageTexture.create_from_image(atlas_image)
+
+	var generation_result = generator.generate_body_part_polygons(atlas_image, atlas_texture, _rigging_state.seed_data, _rigging_state.polygon_epsilon)
 	if generation_result.is_empty() or not generation_result.has("polygons") or generation_result.polygons.is_empty():
 		push_error("No se generaron polígonos.")
 		return
@@ -33,9 +35,14 @@ func on_generate_pressed():
 	var polygons = generation_result.polygons
 	var origins = generation_result.origins
 
-	var root = ui.get_tree().edited_scene_root
+	var tree = get_tree()
+	if not is_instance_valid(tree):
+		push_error("RigGenerator is not in a scene tree.")
+		return
+
+	var root = tree.edited_scene_root
 	if not is_instance_valid(root):
-		push_error("No hay escena abierta.")
+		push_error("No hay escena abierta en el editor.")
 		return
 
 	var rig_root = Node2D.new()
@@ -43,7 +50,7 @@ func on_generate_pressed():
 	root.add_child(rig_root)
 	rig_root.owner = root
 
-	var skeleton = HumanoidBuilder.new().build_complete_rig(origins, ui.seeds, atlas_loader.atlas_image.get_size())
+	var skeleton = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size())
 	rig_root.add_child(skeleton)
 	skeleton.owner = root
 
