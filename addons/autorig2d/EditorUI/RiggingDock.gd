@@ -4,7 +4,7 @@ extends VBoxContainer
 # Módulos principales
 const PolygonGenerator = preload("uid://dcc5an3ptehth")
 const PartListManager  = preload("res://addons/autorig2d/core/PartListManager.gd")
-const HumanoidBuilder  = preload("res://addons/autorig2d/core/HumanoidBuilder.gd")
+const HumanoidBuilder = preload("uid://h5xmctj7pxg6")
 const WeightingEngine  = preload("res://addons/autorig2d/core/WeightingEngine.gd")
 
 # Nueva lógica separada

@@ -119,7 +119,8 @@ func _setup_polygon_skinning(poly: Polygon2D, skeleton: Skeleton2D, main_bone: B
 	# 4. Create the final skinning data structure
 	var skinning_data = []
 	for i in range(bone_chain.size()):
-		skinning_data.append([final_bone_paths[i], normalized_weights_arrays[i]])
+		skinning_data.append(final_bone_paths[i])
+		skinning_data.append(normalized_weights_arrays[i])
 		
 	poly.bones = skinning_data
 	

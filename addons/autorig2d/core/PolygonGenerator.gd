@@ -31,7 +31,7 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
 	for i in range(all_regions.size()):
 		used_regions.append(false)
 
-	# PASO 2: Crear mapeo semilla → región más cercana
+	# PASO 2: Crear mapeo semilla → región que la contiene
 	var seed_to_region = {}
 
 	for part_name in seeds.keys():
@@ -40,27 +40,25 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
 			continue
 		
 		var seed_pos = seed_points[0]
+		var seed_pos_int = Vector2i(seed_pos)
 		var best_region: int = -1
-		var best_distance = INF
 
-		# Buscar la región más cercana y no usada
+		# Buscar la región que CONTIENE la semilla
 		for i in range(all_regions.size()):
 			if used_regions[i]:
 				continue
 
 			var region = all_regions[i]
-			var distance = _get_distance_to_region(seed_pos, region)
-
-			if distance < best_distance:
-				best_distance = distance
+			if region.has(seed_pos_int):
 				best_region = i
+				break # Found it, no need to check others
 
 		if best_region != -1:
 			seed_to_region[part_name] = best_region
 			used_regions[best_region] = true  # marcar región como usada
-			print("  '%s' → región #%d (dist: %.1f px)" % [part_name, best_region, best_distance])
+			print("  '%s' → región #%d (contenida)" % [part_name, best_region])
 		else:
-			print("  ❌ '%s' no encontró región cercana" % part_name)
+			print("  ❌ '%s' no encontró región. La semilla debe estar dentro de la pieza." % part_name)
 
 	# PASO 3: Generar polígonos para cada parte
 	for part_name in seeds.keys():
