@@ -16,9 +16,11 @@ func on_select_atlas_pressed():
 	pass
 
 func on_file_selected(path: String, texture_rect: TextureRect) -> Dictionary:
+	print("AtlasLoader: on_file_selected called with path: ", path)
 	_rigging_state.loaded_image_path = path
 	var atlas_image = Image.load_from_file(path)
 	if atlas_image:
+		print("AtlasLoader: Image loaded successfully.")
 		var atlas_texture = ImageTexture.create_from_image(atlas_image)
 		
 		# Inicializar el gestor de coordenadas
@@ -30,4 +32,5 @@ func on_file_selected(path: String, texture_rect: TextureRect) -> Dictionary:
 		return {"texture": atlas_texture, "image": atlas_image}
 	else:
 		push_error("❌ Error cargando atlas: " + path)
+		print("AtlasLoader: Failed to load image from path: ", path)
 		return {"texture": null, "image": null}

@@ -1,4 +1,5 @@
 extends Node
+class_name PartListManager
 
 var _rigging_state: RiggingState
 
@@ -17,7 +18,7 @@ func get_part_names() -> Array:
 	return _rigging_state.part_names.duplicate()  # Devolver copia para evitar modificaciones externas
 
 # SETTER (con emisión de señal)
-func add_part_name(name: String):
+func add_part_name(name: String) -> bool:
 	print("[PartListManager] 🔄 Iniciando add_part_name con: '", name, "'")
 	
 	var clean_name = name.strip_edges().to_lower().replace(" ", "_")

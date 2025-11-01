@@ -23,16 +23,21 @@ func _init():
 		part_data[part_name] = {"parent": ""}
 
 func add_part_name(name: String) -> bool:
+	print("RiggingState: add_part_name called with: ", name)
 	var clean_name = name.strip_edges().to_lower().replace(" ", "_")
+	print("RiggingState: Cleaned name: ", clean_name)
 	
 	if clean_name.is_empty():
 		push_warning("El nombre de la parte no puede estar vacío.")
+		print("RiggingState: Cleaned name is empty, returning false.")
 		return false
 		
 	if clean_name in part_names:
 		push_warning("La parte '%s' ya existe." % clean_name)
+		print("RiggingState: Part '%s' already exists, returning false." % clean_name)
 		return false
 	
 	part_names.append(clean_name)
 	part_data[clean_name] = {"parent": ""}
+	print("RiggingState: Part '%s' added successfully, returning true." % clean_name)
 	return true

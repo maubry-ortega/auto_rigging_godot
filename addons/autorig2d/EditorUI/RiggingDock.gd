@@ -23,28 +23,41 @@ var seed_manager = SeedManager.new()
 var rig_generator = RigGenerator.new()
 var part_dialog = PartDialogManager.new()
 var coordinate_manager = CoordinateManager.new()
-var _rigging_state = preload("res://addons/autorig2d/core/RiggingState.gd").new()
+var _rigging_state = RiggingState.new() 
 
 # Estado
 var _new_part_dialog
-var _parent_option_button: OptionButton
-var _part_option_button: OptionButton
+var _part_option_button: OptionButton 
 
 func _ready():
 	await get_tree().process_frame
 
-	# Inicializar todos los módulos con las dependencias necesarias
-	part_manager.initialize(_rigging_state)
+	# CORREGIDO: Inicializar _rigging_state primero y verificar que no sea null
+	if _rigging_state == null:
+		_rigging_state = RiggingState.new()
+	
+	# CORREGIDO: Inicializar arrays si no existen
+	if _rigging_state.part_names == null:
+		_rigging_state.part_names = ["head", "left_arm", "right_arm", "left_leg", "right_leg"]  # Valores por defecto
+	if _rigging_state.part_data == null:
+		_rigging_state.part_data = {}
 
+	# CORREGIDO: Usar solo ParentOptionButton para todo
 	_part_option_button = $PartNameHBox/ParentOptionButton
+
+	# Limpiar y poblar con las partes actuales
+	_part_option_button.clear()
 	for part_name in _rigging_state.part_names:
 		_part_option_button.add_item(part_name)
 
+	if _part_option_button.item_count > 0:
 		_part_option_button.select(0)
 		_rigging_state.current_part_name = _part_option_button.get_item_text(0)
 		print("Default selected part: ", _rigging_state.current_part_name)
-
-	part_dialog.initialize_dialog(self, _rigging_state)
+	
+	# Inicializar módulos
+	part_manager.initialize(_rigging_state)
+	part_dialog.initialize_dialog(self, _rigging_state, part_manager)
 	atlas_loader.initialize(_rigging_state, coordinate_manager)
 	seed_manager.initialize(_rigging_state, coordinate_manager)
 	rig_generator.initialize(_rigging_state, generator, HumanoidBuilder, WeightingEngine, coordinate_manager)
@@ -72,51 +85,32 @@ func _ready():
 		
 	part_manager.part_name_added.connect(func(new_name, _all_parts):
 		part_dialog.on_part_name_added(new_name, _part_option_button)
+		var new_index = _get_option_button_item_index_by_text(_part_option_button, new_name)
+		if new_index != -1:
+			_part_option_button.select(new_index)
+			_rigging_state.current_part_name = new_name
+			print("RiggingDock: New part '" + new_name + "' selected and current_part_name updated.")
 		_update_parent_option_button()
 	)
 
-	_parent_option_button = $PartNameHBox/ParentOptionButton
+	_part_option_button.item_selected.connect(self._on_part_selected)
 
-	_part_option_button.item_selected.connect(func(index):
-		_rigging_state.current_part_name = _part_option_button.get_item_text(index)
-		print("Selected part: ", _rigging_state.current_part_name)
-		_update_parent_option_button()
-	)
-	_parent_option_button.item_selected.connect(self._on_parent_selected)
+	# Actualizar el estado inicial
+	_update_parent_option_button()
 
-	_update_parent_option_button() # Initial population
-
+func _on_part_selected(index: int):
+	_rigging_state.current_part_name = _part_option_button.get_item_text(index)
+	print("RiggingDock: _rigging_state.current_part_name updated to: ", _rigging_state.current_part_name)
+	print("Selected part: ", _rigging_state.current_part_name)
+	_update_parent_option_button()
+	
 func _update_parent_option_button():
-	var part_option_button = _part_option_button
-
-	_parent_option_button.clear()
-	_parent_option_button.add_item("None", 0) # Option for no parent
-
+	# Esta función ahora actualiza la lógica de parentesco internamente
+	# pero seguimos usando el mismo OptionButton para seleccionar partes
+	
 	var current_part_name = _rigging_state.current_part_name
-	var current_parent_index = 0
-
-	for i in range(_rigging_state.part_names.size()):
-		var part_name = _rigging_state.part_names[i]
-		if part_name != current_part_name: # A part cannot be its own parent
-			_parent_option_button.add_item(part_name, i + 1) # +1 because of 'None' at index 0
-			if _rigging_state.part_data.has(current_part_name) and _rigging_state.part_data[current_part_name].has("parent") and _rigging_state.part_data[current_part_name]["parent"] == part_name:
-				current_parent_index = i + 1
-
-	_parent_option_button.select(current_parent_index)
-
-func _on_parent_selected(index: int):
-	var selected_parent_name = _parent_option_button.get_item_text(index)
-
-	if not _rigging_state.part_data.has(_rigging_state.current_part_name):
-		_rigging_state.part_data[_rigging_state.current_part_name] = {}
-
-	if selected_parent_name == "None":
-		_rigging_state.part_data[_rigging_state.current_part_name]["parent"] = ""
-	else:
-		_rigging_state.part_data[_rigging_state.current_part_name]["parent"] = selected_parent_name
-	print("Parent for ", _rigging_state.current_part_name, ": ", _rigging_state.part_data[_rigging_state.current_part_name]["parent"])
-
-
+	print("Current part updated: ", current_part_name)
+	
 func _on_seeds_updated():
 	$TextureRect.queue_redraw()
 
@@ -125,3 +119,9 @@ func _on_file_selected(path: String):
 	if result.texture:
 		$TextureRect.texture = result.texture
 		$TextureRect.queue_redraw()
+
+func _get_option_button_item_index_by_text(option_button: OptionButton, target_text: String) -> int:
+	for i in range(option_button.get_item_count()):
+		if option_button.get_item_text(i) == target_text:
+			return i
+	return -1 # Return -1 if the item is not found

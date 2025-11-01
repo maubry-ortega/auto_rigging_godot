@@ -13,19 +13,28 @@ func initialize(rigging_state: RiggingState, coord_manager: CoordinateManager):
 	print("SeedManager initialized. _rigging_state is: ", _rigging_state)
 
 func on_add_seed_pressed():
-	print("on_add_seed_pressed called. _rigging_state is: ", _rigging_state)
+	print("SeedManager: on_add_seed_pressed called.")
+	print("SeedManager: current_part_name before check: ", _rigging_state.current_part_name)
 	# The UI should set _rigging_state.current_part_name before calling this.
 	if _rigging_state.current_part_name.is_empty():
 		push_error("Selecciona una parte primero.")
 		return
 	_rigging_state.adding_seeds = true # Assuming RiggingState will have this property
+	print("SeedManager: adding_seeds set to: ", _rigging_state.adding_seeds)
 	# Reiniciar las semillas para esta parte
 	_rigging_state.seed_data[_rigging_state.current_part_name] = []
 	# The TextureRect redraw will be handled by the UI observing RiggingState changes
-	print("\n📍 Agregar semilla para:", _rigging_state.current_part_name)
+	print("📍 Agregar semilla para:", _rigging_state.current_part_name)
 
 func on_texture_gui_input(event):
-	if _rigging_state.adding_seeds and event is InputEventMouseButton and event.pressed:
+	# Only process input if we are in "adding seeds" mode
+	if not _rigging_state.adding_seeds:
+		return
+
+	if event is InputEventMouseButton and event.pressed:
+		print("SeedManager: on_texture_gui_input called.")
+		print("SeedManager: current_part_name in gui_input: ", _rigging_state.current_part_name)
+		print("SeedManager: adding_seeds in gui_input: ", _rigging_state.adding_seeds)
 		if _rigging_state.loaded_image_path.is_empty(): # Check if an image is loaded
 			push_error("No hay atlas cargado.")
 			_rigging_state.adding_seeds = false
@@ -49,7 +58,7 @@ func on_texture_gui_input(event):
 func on_texture_rect_draw(rect: Control):
 	# TODO: This drawing logic should ideally be moved to the UI (e.g., RiggingDock.gd)
 	#       which observes changes in RiggingState.seed_data.
-	
+	print("SeedManager: on_texture_rect_draw called.")
 	if _rigging_state.loaded_image_path.is_empty(): return
 	
 	for part in _rigging_state.seed_data.keys():
