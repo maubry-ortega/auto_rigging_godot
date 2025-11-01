@@ -16,7 +16,7 @@ func initialize(rigging_state: RiggingState, gen, hb, we, coord_manager):
 var _generated_rig_root: Node2D = null
 var _generated_skeleton: Skeleton2D = null
 var _generated_polygons: Array[Polygon2D] = []
-
+ 
 func on_generate_preview_pressed():
 	if _rigging_state.loaded_image_path.is_empty():
 		push_error("Carga un atlas primero.")
@@ -54,7 +54,9 @@ func on_generate_preview_pressed():
 	root.add_child(_generated_rig_root)
 	_generated_rig_root.owner = root
 
-	_generated_skeleton = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size())
+	var rig_build_result = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons)
+	_generated_skeleton = rig_build_result["skeleton"]
+	var active_polygons = rig_build_result["polygons"]
 	_generated_rig_root.add_child(_generated_skeleton)
 	_generated_skeleton.owner = root
 
@@ -62,7 +64,7 @@ func on_generate_preview_pressed():
 
 	# Primero añadir los polígonos a la escena
 	_generated_polygons = []
-	for poly in polygons:
+	for poly in active_polygons:
 		_generated_rig_root.add_child(poly)
 		poly.owner = root
 		# Ahora que ambos nodos están en el árbol, podemos obtener la ruta de forma segura
@@ -94,10 +96,20 @@ func _assign_bone_ownership(node: Node, owner: Node):
 		child.owner = owner
 		_assign_bone_ownership(child, owner)
 
-func _debug_rig_info(rig_root: Node2D, skeleton, polygons:Array):
+func _debug_rig_info(rig_root: Node2D, skeleton: Skeleton2D, polygons:Array):
 	print("\n🔍 Información del Rig Generado:")
 	print("  Nodo raíz:", rig_root.name)
 	print("  Esqueleto:", skeleton.name)
+	print("  Total de huesos:", skeleton.get_bone_count())
+	print("  Jerarquía de huesos:")
+	_print_bone_hierarchy(skeleton, 0)
 	print("  Polígonos:", polygons.size())
 	for poly in polygons:
 		print("  📐 %s | Vértices: %d" % [poly.name, poly.polygon.size()])
+
+func _print_bone_hierarchy(node: Node, indent: int):
+	var indent_str = "  ".repeat(indent)
+	if node is Bone2D or node is Skeleton2D: # Also print Skeleton2D as a root for bones
+		print("%s- %s" % [indent_str, node.name])
+	for child in node.get_children():
+		_print_bone_hierarchy(child, indent + 1)

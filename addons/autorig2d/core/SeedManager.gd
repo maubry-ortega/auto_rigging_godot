@@ -47,9 +47,6 @@ func on_texture_gui_input(event):
 		
 		_rigging_state.seed_data[_rigging_state.current_part_name].append(canvas_pos)
 		
-		# Detener después de 2 puntos
-		if _rigging_state.seed_data[_rigging_state.current_part_name].size() >= 2:
-			_rigging_state.adding_seeds = false
 
 		# The UI will observe changes in _rigging_state.seed_data and redraw
 		print("  ✅ %s → %s" % [_rigging_state.current_part_name, canvas_pos])

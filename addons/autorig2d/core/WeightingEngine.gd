@@ -49,7 +49,7 @@ func _find_associated_bone(part_name: String, bones: Array) -> Bone2D:
 	
 	# Fallback: buscar por similitud (sin el _bone)
 	for bone in bones:
-		var bone_base_name = bone.name.replace("_bone", "")
+		var bone_base_name = bone.name.rsplit("_bone_", true, 1)[0]
 		if bone_base_name == part_name:
 			return bone
 	
