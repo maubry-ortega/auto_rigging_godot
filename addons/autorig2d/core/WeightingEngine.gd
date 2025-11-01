@@ -56,21 +56,72 @@ func _find_associated_bone(part_name: String, bones: Array) -> Bone2D:
 	return null
 
 func _setup_polygon_skinning(poly: Polygon2D, skeleton: Skeleton2D, main_bone: Bone2D):
-	# En Godot 4, para asignar un polígono completo a un solo hueso,
-	# el formato esperado es un array plano: [ruta_al_hueso, array_de_pesos].
-	
-	# 1. Obtener la ruta relativa desde el polígono hasta el hueso.
-	#    Esto es crucial y requiere que ambos nodos estén en el árbol de la escena.
-	var bone_path = poly.get_path_to(main_bone)
+	# 1. Find all bones in the chain starting from main_bone
+	var bone_chain = [main_bone]
+	var current_bone = main_bone
+	while current_bone.get_child_count() > 0:
+		# Assuming one child per bone in the chain
+		current_bone = current_bone.get_child(0)
+		if current_bone is Bone2D:
+			bone_chain.append(current_bone)
+		else:
+			break # Should not happen in a clean chain
 
-	# 2. Crear un array de pesos. Cada vértice tendrá un peso de 1.0 para este hueso.
-	var vertex_count = poly.polygon.size()
-	var weights = PackedFloat32Array()
-	weights.resize(vertex_count)
-	weights.fill(1.0)
+	# 2. For each vertex in the polygon, calculate weights for the bones in the chain
+	var num_vertices = poly.polygon.size()
+	var final_bone_paths = []
+	var final_weights_arrays = []
+	var world_to_poly_local = poly.get_global_transform().affine_inverse()
 
-	# 3. Crear la estructura de datos final y asignarla.
-	var skinning_data = [bone_path, weights]
+	for bone in bone_chain:
+		final_bone_paths.append(poly.get_path_to(bone))
+		var weights_for_bone = PackedFloat32Array()
+		weights_for_bone.resize(num_vertices)
+		
+		# Get bone segment in polygon's local coordinates
+		var bone_start_world = bone.get_global_position()
+		var bone_end_world = bone.get_global_transform() * Vector2(bone.length, 0)
+		var bone_start_local = world_to_poly_local * bone_start_world
+		var bone_end_local = world_to_poly_local * bone_end_world
+
+		for i in range(num_vertices):
+			var vertex_pos = poly.polygon[i]
+			
+			# Find closest point on the bone segment to the vertex
+			var closest_point = Geometry2D.get_closest_point_to_segment(vertex_pos, bone_start_local, bone_end_local)
+			var distance = vertex_pos.distance_to(closest_point)
+			
+			# Simple inverse distance weighting (add a small epsilon to avoid division by zero)
+			var weight = 1.0 / (distance * distance + 0.001)
+			weights_for_bone[i] = weight
+		
+		final_weights_arrays.append(weights_for_bone)
+
+	# 3. Normalize the weights for each vertex
+	var normalized_weights_arrays = []
+	for i in range(bone_chain.size()):
+		var new_weights = PackedFloat32Array()
+		new_weights.resize(num_vertices)
+		normalized_weights_arrays.append(new_weights)
+
+	for i in range(num_vertices):
+		var total_weight = 0.0
+		for j in range(bone_chain.size()):
+			total_weight += final_weights_arrays[j][i]
+		
+		if total_weight > 0:
+			for j in range(bone_chain.size()):
+				normalized_weights_arrays[j][i] = final_weights_arrays[j][i] / total_weight
+		else:
+			# If total is zero (e.g., vertex is at 0 distance from all bones?), assign to first bone
+			normalized_weights_arrays[0][i] = 1.0
+
+	# 4. Create the final skinning data structure
+	var skinning_data = []
+	for i in range(bone_chain.size()):
+		skinning_data.append([final_bone_paths[i], normalized_weights_arrays[i]])
+		
 	poly.bones = skinning_data
-
-	print("  ✅ '%s' conectado a esqueleto y pesos asignados al hueso '%s'" % [poly.name, main_bone.name])
+	
+	var bone_names = bone_chain.map(func(b): return b.name)
+	print("  ✅ '%s' conectado a esqueleto y pesos distribuidos entre: %s" % [poly.name, bone_names])

@@ -54,7 +54,7 @@ func on_generate_preview_pressed():
 	root.add_child(_generated_rig_root)
 	_generated_rig_root.owner = root
 
-	var rig_build_result = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons)
+	var rig_build_result = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons, _rigging_state.seed_data.keys())
 	_generated_skeleton = rig_build_result["skeleton"]
 	var active_polygons = rig_build_result["polygons"]
 	_generated_rig_root.add_child(_generated_skeleton)
