@@ -75,22 +75,35 @@ func _build_hierarchy(skeleton: Skeleton2D, bones: Dictionary, origins: Dictiona
 				break
 			i += 1
 
-	# 2. Build inter-part hierarchy based on creation order (simple chain)
+	# 2. Build inter-part hierarchy
+	var humanoid_parts = []
+	if bones.has("torso"):
+		humanoid_parts = HIERARCHY_MAP["torso"] + ["torso"]
+		var torso_root = bones["torso"]
+		for child_name in HIERARCHY_MAP["torso"]:
+			if bones.has(child_name):
+				var child_root = bones[child_name]
+				if child_root.get_parent() == null:
+					torso_root.add_child(child_root)
+
+	# For all other parts, use creation order as a fallback
 	for i in range(1, part_order.size()):
 		var parent_name = part_order[i - 1]
 		var child_name = part_order[i]
-		
+
+		# If child is a main humanoid part, it's already parented (or should be)
+		if child_name in humanoid_parts:
+			continue
+
 		if bones.has(parent_name) and bones.has(child_name):
-			var parent_root_bone = bones[parent_name]
 			var child_root_bone = bones[child_name]
 			
-			# Find the last bone in the parent's chain
-			var last_bone_in_chain = parent_root_bone
-			while last_bone_in_chain.get_child_count() > 0:
-				last_bone_in_chain = last_bone_in_chain.get_child(0)
-			
-			# Parent the child's root bone to the parent's last bone
+			# Only parent if it doesn't have a parent yet
 			if child_root_bone.get_parent() == null:
+				var parent_root_bone = bones[parent_name]
+				var last_bone_in_chain = parent_root_bone
+				while last_bone_in_chain.get_child_count() > 0:
+					last_bone_in_chain = last_bone_in_chain.get_child(0)
 				last_bone_in_chain.add_child(child_root_bone)
 
 	# 3. Add all root bones (bones without parents) to the skeleton
