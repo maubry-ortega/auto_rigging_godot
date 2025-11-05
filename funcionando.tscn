@@ -15,12 +15,13 @@ image = SubResource("Image_5ra12")
 [node name="Node2D" type="Node2D"]
 
 [node name="sin_polygonos_internos" type="Node2D" parent="."]
+visible = false
 
 [node name="AutoRigSkeleton" type="Skeleton2D" parent="sin_polygonos_internos"]
 
 [node name="torso_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton"]
 rotation = -1.3768371
-scale = Vector2(0.99999994, 0.99999994)
+scale = Vector2(0.9999999, 0.9999999)
 rest = Transform2D(0.19274534, -0.9812488, 0.9812488, 0.19274534, 0, 0)
 
 [node name="head_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton/torso_bone_0"]
@@ -37,8 +38,8 @@ rest = Transform2D(-0.85803777, -0.51358646, 0.51358646, -0.85803777, 144.59406,
 
 [node name="arm2_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton/torso_bone_0/left_arm_bone_0"]
 position = Vector2(127.64676, 1.7915344)
-rotation = 0.13258551
-scale = Vector2(0.99999994, 0.99999994)
+rotation = 0.1325855
+scale = Vector2(0.9999999, 0.9999999)
 rest = Transform2D(0.9916826, 0.12870742, -0.12870742, 0.9916826, 127.64676, 1.7915344)
 
 [node name="right_arm_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton/torso_bone_0"]
@@ -64,7 +65,7 @@ rest = Transform2D(0.75199014, 0.6591743, -0.6591743, 0.75199014, 108.37887, 99.
 [node name="right_leg_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton/torso_bone_0"]
 position = Vector2(-25.810345, 34.624065)
 rotation = 2.9476335
-scale = Vector2(0.99999994, 0.99999994)
+scale = Vector2(0.9999999, 0.9999999)
 rest = Transform2D(-0.9812488, 0.19274531, -0.19274531, -0.9812488, -25.810345, 34.624065)
 
 [node name="rightleg_bone_0" type="Bone2D" parent="sin_polygonos_internos/AutoRigSkeleton/torso_bone_0/right_leg_bone_0"]

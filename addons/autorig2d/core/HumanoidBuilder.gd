@@ -54,14 +54,12 @@ func _create_bone_nodes(part_order: Array, seeds: Dictionary) -> Dictionary:
 	return all_bones
 
 func _build_hierarchy(skeleton: Skeleton2D, bones: Dictionary, origins: Dictionary, all_polygons: Array, part_order: Array) -> Array:
-	var active_polygons := []
+	# Simplemente usamos todos los polígonos generados, incluyendo las intersecciones.
+	var active_polygons = all_polygons
+	
 	var all_polygons_map = {}
 	for poly in all_polygons:
 		all_polygons_map[poly.name] = poly
-	
-	for part_name in part_order:
-		if all_polygons_map.has(part_name):
-			active_polygons.append(all_polygons_map[part_name])
 
 	# 1. Build intra-part chains (e.g. part_bone_1 is child of part_bone_0)
 	for part_name in part_order:
