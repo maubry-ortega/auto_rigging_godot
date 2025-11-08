@@ -1,5 +1,5 @@
 @tool
-extends VBoxContainer
+extends PanelContainer
 
 # Módulos principales
 const PolygonGenerator = preload("uid://dcc5an3ptehth")
@@ -38,12 +38,12 @@ func _ready():
 	
 	# CORREGIDO: Inicializar arrays si no existen
 	if _rigging_state.part_names == null:
-		_rigging_state.part_names = ["head", "left_arm", "right_arm", "left_leg", "right_leg"]  # Valores por defecto
+		_rigging_state.part_names = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg"]  # Valores por defecto
 	if _rigging_state.part_data == null:
 		_rigging_state.part_data = {}
 
 	# CORREGIDO: Usar solo ParentOptionButton para todo
-	_part_option_button = $PartNameHBox/ParentOptionButton
+	_part_option_button = $VBoxContainer/PartNameHBox/ParentOptionButton
 
 	# Limpiar y poblar con las partes actuales
 	_part_option_button.clear()
@@ -64,24 +64,25 @@ func _ready():
 	add_child(rig_generator)
 
 	# Conexiones UI
-	$FileDialog.file_selected.connect(self._on_file_selected)
-	$HBoxContainer/SelectAtlasButton.pressed.connect($FileDialog.popup)
-	$HBoxContainer/AddSeedButton.pressed.connect(seed_manager.on_add_seed_pressed)
-	$HBoxContainer/GeneratePreviewButton.pressed.connect(rig_generator.on_generate_preview_pressed)
-	$HBoxContainer/FinalizeWeightsButton.pressed.connect(rig_generator.on_finalize_weights_pressed)
-	$PartNameHBox/AddNewPartButton.pressed.connect(part_dialog.on_add_new_part_pressed)
+	$VBoxContainer/FileDialog.file_selected.connect(self._on_file_selected)
+	$VBoxContainer/HBoxContainer/SelectAtlasButton.pressed.connect($VBoxContainer/FileDialog.popup)
+	$VBoxContainer/HBoxContainer/AddSeedButton.pressed.connect(seed_manager.on_add_seed_pressed)
+	$VBoxContainer/GenerationHBox/GeneratePreviewButton.pressed.connect(rig_generator.on_generate_preview_pressed)
+	$VBoxContainer/GenerationHBox/GenerateWeightsButton.pressed.connect(rig_generator.on_generate_weights_pressed)
 
-	if $TextureRect:
-		$TextureRect.gui_input.connect(seed_manager.on_texture_gui_input)
-		$TextureRect.draw.connect(seed_manager.on_texture_rect_draw.bind($TextureRect))
+	$VBoxContainer/PartNameHBox/AddNewPartButton.pressed.connect(part_dialog.on_add_new_part_pressed)
+
+	if $VBoxContainer/TextureRect:
+		$VBoxContainer/TextureRect.gui_input.connect(seed_manager.on_texture_gui_input)
+		$VBoxContainer/TextureRect.draw.connect(seed_manager.on_texture_rect_draw.bind($VBoxContainer/TextureRect))
 		seed_manager.seeds_updated.connect(self._on_seeds_updated)
 
-	if $EpsilonHBox/EpsilonSlider:
-		var slider = $EpsilonHBox/EpsilonSlider
+	if $VBoxContainer/EpsilonHBox/EpsilonSlider:
+		var slider = $VBoxContainer/EpsilonHBox/EpsilonSlider
 		slider.value = _rigging_state.polygon_epsilon
 		slider.value_changed.connect(func(value): _rigging_state.polygon_epsilon = value)
-		slider.value_changed.connect(part_dialog.on_epsilon_slider_visual_update.bind($EpsilonHBox/EpsilonLabel))
-		part_dialog.on_epsilon_slider_visual_update(_rigging_state.polygon_epsilon, $EpsilonHBox/EpsilonLabel)
+		slider.value_changed.connect(part_dialog.on_epsilon_slider_visual_update.bind($VBoxContainer/EpsilonHBox/EpsilonLabel))
+		part_dialog.on_epsilon_slider_visual_update(_rigging_state.polygon_epsilon, $VBoxContainer/EpsilonHBox/EpsilonLabel)
 		
 	part_manager.part_name_added.connect(func(new_name, _all_parts):
 		part_dialog.on_part_name_added(new_name, _part_option_button)
@@ -112,13 +113,13 @@ func _update_parent_option_button():
 	print("Current part updated: ", current_part_name)
 	
 func _on_seeds_updated():
-	$TextureRect.queue_redraw()
+	$VBoxContainer/TextureRect.queue_redraw()
 
 func _on_file_selected(path: String):
-	var result = atlas_loader.on_file_selected(path, $TextureRect)
+	var result = atlas_loader.on_file_selected(path, $VBoxContainer/TextureRect)
 	if result.texture:
-		$TextureRect.texture = result.texture
-		$TextureRect.queue_redraw()
+		$VBoxContainer/TextureRect.texture = result.texture
+		$VBoxContainer/TextureRect.queue_redraw()
 
 func _get_option_button_item_index_by_text(option_button: OptionButton, target_text: String) -> int:
 	for i in range(option_button.get_item_count()):

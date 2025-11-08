@@ -2,36 +2,36 @@
 extends RefCounted
 
 # --- Propiedades ---
-
-# Referencia al nodo TextureRect que muestra el atlas
 var texture_rect: TextureRect
-
-# Referencia a la imagen del atlas
 var atlas_image: Image
+var rig_offset: Vector2 = Vector2.ZERO
 
-# --- Inicialización ---
-
-# Inicializa el gestor con las referencias necesarias
 func initialize(rect: TextureRect, image: Image):
 	self.texture_rect = rect
 	self.atlas_image = image
 
-# --- Transformaciones de Coordenadas ---
+func set_atlas_image(image: Image):
+	self.atlas_image = image
 
-# Convierte una posición desde el espacio del control UI (TextureRect)
-# al espacio de píxeles de la imagen del atlas (lienzo).
+func set_texture_rect(rect: TextureRect):
+	self.texture_rect = rect
+
+func set_rig_offset(offset: Vector2):
+	rig_offset = offset
+
+# Convierte UI -> canvas (pixeles del atlas)
 func ui_to_canvas(ui_pos: Vector2) -> Vector2:
 	var data = _get_texture_mapping_data()
 	if not data:
 		return Vector2.ZERO
 
 	var pos = ui_pos - data.offset
-	var canvas_pos = pos / data.draw_size * Vector2(data.tex_size)
-	
+	var canvas_pos = Vector2(0,0)
+	if data.draw_size.x > 0 and data.tex_size.x > 0:
+		canvas_pos = pos / data.draw_size * Vector2(data.tex_size)
 	return canvas_pos
 
-# Convierte una posición desde el espacio del lienzo (atlas)
-# al espacio del control UI (TextureRect) para dibujar.
+# Convierte canvas -> UI
 func canvas_to_ui(canvas_pos: Vector2) -> Vector2:
 	var data = _get_texture_mapping_data()
 	if not data:
@@ -40,17 +40,15 @@ func canvas_to_ui(canvas_pos: Vector2) -> Vector2:
 	var ui_pos = canvas_pos / Vector2(data.tex_size) * data.draw_size + data.offset
 	return ui_pos
 
-# Convierte una posición desde el espacio del lienzo (atlas)
-# al espacio de mundo de la escena final.
-# Por ahora, asumimos que el origen del rig coincide con el origen del lienzo.
+# Convierte canvas -> world (aplicando rig_offset si corresponde)
 func canvas_to_world(canvas_pos: Vector2) -> Vector2:
-	# En el futuro, aquí se podría añadir un offset global del rig.
-	return canvas_pos
+	# Asumimos coordenadas del atlas en pixels: simplemente aplicar offset del rig si se ha definido
+	return canvas_pos - rig_offset
 
-# --- Lógica Interna ---
+# Convierte world -> canvas
+func world_to_canvas(world_pos: Vector2) -> Vector2:
+	return world_pos + rig_offset
 
-# Calcula el tamaño y offset del atlas tal como se dibuja en el TextureRect.
-# Esta es la lógica clave para mapear coordenadas.
 func _get_texture_mapping_data() -> Dictionary:
 	if not is_instance_valid(texture_rect) or not atlas_image:
 		return {}

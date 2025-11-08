@@ -1,94 +1,140 @@
-[gd_scene load_steps=2 format=3 uid="uid://bptqvvkgrd8di"]
+[gd_scene load_steps=4 format=3 uid="uid://bptqvvkgrd8di"]
 
 [ext_resource type="Script" uid="uid://c0u6olr5is4i6" path="res://addons/autorig2d/EditorUI/RiggingDock.gd" id="1_gh103"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pmyx8"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0.14902, 0.164706, 0.203922, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.301961, 0.329412, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="Theme" id="Theme_usq2u"]
+Panel/styles/panel = SubResource("StyleBoxFlat_pmyx8")
+
 [node name="Control" type="Control"]
 layout_mode = 3
-anchors_preset = 0
-
-[node name="RiggingDock" type="VBoxContainer" parent="."]
-layout_mode = 0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 40.0
-offset_bottom = 40.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="RiggingDock" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_usq2u")
 script = ExtResource("1_gh103")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="RiggingDock"]
+[node name="VBoxContainer" type="VBoxContainer" parent="RiggingDock"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="RiggingDock/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Auto-Rig 2D"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="RiggingDock/VBoxContainer"]
 layout_mode = 2
 
-[node name="GeneratePreviewButton" type="Button" parent="RiggingDock/HBoxContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="RiggingDock/VBoxContainer"]
 layout_mode = 2
-text = "Generar Previsualización"
 
-[node name="FinalizeWeightsButton" type="Button" parent="RiggingDock/HBoxContainer"]
+[node name="SelectAtlasButton" type="Button" parent="RiggingDock/VBoxContainer/HBoxContainer"]
 layout_mode = 2
-text = "Finalizar y Aplicar Pesos"
-
-[node name="SelectAtlasButton" type="Button" parent="RiggingDock/HBoxContainer"]
-layout_mode = 2
+size_flags_horizontal = 3
 text = "Seleccionar Atlas"
 
-[node name="AddSeedButton" type="Button" parent="RiggingDock/HBoxContainer"]
+[node name="AddSeedButton" type="Button" parent="RiggingDock/VBoxContainer/HBoxContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Agregar Punto"
 
-[node name="PartNameHBox" type="HBoxContainer" parent="RiggingDock"]
+[node name="GenerationHBox" type="HBoxContainer" parent="RiggingDock/VBoxContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="RiggingDock/PartNameHBox"]
+[node name="GeneratePreviewButton" type="Button" parent="RiggingDock/VBoxContainer/GenerationHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Generar Previsualización"
+
+[node name="GenerateWeightsButton" type="Button" parent="RiggingDock/VBoxContainer/GenerationHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Generar Pesos"
+
+[node name="PartNameHBox" type="HBoxContainer" parent="RiggingDock/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="RiggingDock/VBoxContainer/PartNameHBox"]
 layout_mode = 2
 text = "Parte del Cuerpo:"
+vertical_alignment = 1
 
-[node name="AddNewPartButton" type="Button" parent="RiggingDock/PartNameHBox"]
+[node name="ParentOptionButton" type="OptionButton" parent="RiggingDock/VBoxContainer/PartNameHBox"]
 layout_mode = 2
-tooltip_text = "Añadir una nueva parte personalizada."
-text = " + "
-
-[node name="ParentOptionButton" type="OptionButton" parent="RiggingDock/PartNameHBox"]
-layout_mode = 2
+size_flags_horizontal = 3
 selected = 0
 item_count = 6
-popup/item_0/text = "None"
+popup/item_0/text = "torso"
 popup/item_0/id = 0
 popup/item_1/text = "head"
-popup/item_1/id = 2
+popup/item_1/id = 1
 popup/item_2/text = "left_arm"
-popup/item_2/id = 3
+popup/item_2/id = 2
 popup/item_3/text = "right_arm"
-popup/item_3/id = 4
+popup/item_3/id = 3
 popup/item_4/text = "left_leg"
-popup/item_4/id = 5
+popup/item_4/id = 4
 popup/item_5/text = "right_leg"
-popup/item_5/id = 6
+popup/item_5/id = 5
 
-[node name="EpsilonHBox" type="HBoxContainer" parent="RiggingDock"]
+[node name="AddNewPartButton" type="Button" parent="RiggingDock/VBoxContainer/PartNameHBox"]
+layout_mode = 2
+tooltip_text = "Añadir una nueva parte personalizada."
+text = "+"
+
+[node name="EpsilonHBox" type="HBoxContainer" parent="RiggingDock/VBoxContainer"]
 layout_mode = 2
 
-[node name="EpsilonLabel" type="Label" parent="RiggingDock/EpsilonHBox"]
+[node name="EpsilonLabel" type="Label" parent="RiggingDock/VBoxContainer/EpsilonHBox"]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 text = "Epsilon: 0.10"
+vertical_alignment = 1
 
-[node name="EpsilonSlider" type="HSlider" parent="RiggingDock/EpsilonHBox"]
-custom_minimum_size = Vector2(200, 0)
+[node name="EpsilonSlider" type="HSlider" parent="RiggingDock/VBoxContainer/EpsilonHBox"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
 min_value = 0.01
 max_value = 5.0
 step = 0.01
 value = 0.09999999999999999
 
-[node name="TextureRect" type="TextureRect" parent="RiggingDock"]
+[node name="TextureRect" type="TextureRect" parent="RiggingDock/VBoxContainer"]
 custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
+size_flags_vertical = 3
 expand_mode = 1
 stretch_mode = 5
 
-[node name="FileDialog" type="FileDialog" parent="RiggingDock"]
-oversampling_override = 1.0
+[node name="FileDialog" type="FileDialog" parent="RiggingDock/VBoxContainer"]
 title = "Seleccionar Atlas PNG"
-exclusive = false
 access = 2
 filters = PackedStringArray("*.png")
