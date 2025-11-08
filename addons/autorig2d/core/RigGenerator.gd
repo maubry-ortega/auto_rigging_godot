@@ -3,16 +3,18 @@ extends Node
 
 var _rigging_state: RiggingState
 var generator
-var HumanoidBuilder
-var WeightingEngine
+var rig_builder
+var weighting_engine
 var coordinate_manager
+var hierarchy_builder
 
-func initialize(rigging_state: RiggingState, gen, hb, we, coord_manager):
+func initialize(rigging_state: RiggingState, gen, rb, we, coord_manager, hb = null):
 	_rigging_state = rigging_state
 	generator = gen
-	HumanoidBuilder = hb
-	WeightingEngine = we
+	rig_builder = rb
+	weighting_engine = we
 	coordinate_manager = coord_manager
+	hierarchy_builder = hb
 
 var _generated_rig_root: Node2D = null
 var _generated_skeleton: Skeleton2D = null
@@ -59,7 +61,9 @@ func on_generate_preview_pressed():
 	root.add_child(_generated_rig_root)
 	_generated_rig_root.owner = root
 
-	var rig_build_result = HumanoidBuilder.new().build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons, _rigging_state.seed_data.keys())
+	# Usar el constructor genérico con la jerarquía actual
+	var hierarchy_name = _rigging_state.get_current_hierarchy()
+	var rig_build_result = rig_builder.build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons, _rigging_state.seed_data.keys(), hierarchy_name)
 	_generated_skeleton = rig_build_result["skeleton"]
 	var active_polygons = rig_build_result["polygons"]
 	_generated_rig_root.add_child(_generated_skeleton)
@@ -80,7 +84,7 @@ func on_generate_preview_pressed():
 	_update_bone_rests(_generated_skeleton)
 
 	# # Llamada al engine de pesos
-	# WeightingEngine.new().assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	# weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
 
 	print("✅ Previsualización del Rig generada.")
 	_debug_rig_info(_generated_rig_root, _generated_skeleton, _generated_polygons)
@@ -91,12 +95,27 @@ func on_generate_weights_pressed():
 		push_error("Genera una previsualización del rig primero.")
 		return
 
-	# Llamada al engine de pesos
-	WeightingEngine.new().assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	# Llamada al engine de pesos optimizado
+	weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
 
 	print("✅ Pesos aplicados al rig.")
 
+# Nuevo método para cambiar la jerarquía actual
+func set_current_hierarchy(hierarchy_name: String):
+	if not _rigging_state.get_available_hierarchies().has(hierarchy_name):
+		push_error("No existe la jerarquía especificada")
+		return
+	
+	_rigging_state.set_current_hierarchy(hierarchy_name)
+	print("Jerarquía actual cambiada a: ", hierarchy_name)
 
+# Obtener la jerarquía actual
+func get_current_hierarchy() -> String:
+	return _rigging_state.get_current_hierarchy()
+
+# Obtener el constructor de jerarquías
+func get_hierarchy_builder():
+	return hierarchy_builder
 
 func _update_bone_rests(node: Node):
 	if node is Bone2D:

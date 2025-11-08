@@ -1,4 +1,3 @@
-
 # RiggingState.gd
 extends Resource
 
@@ -16,7 +15,10 @@ class_name RiggingState
 @export var adding_seeds: bool = false
 @export var polygon_epsilon: float = 0.1
 
-# You can add methods here to manipulate the state, e.g., add_part, update_seed, etc.
+# Nuevas propiedades para jerarquías personalizadas
+@export var current_hierarchy_name: String = "humanoid"
+@export var custom_hierarchies: Dictionary = {}
+@export var hierarchy_data: Dictionary = {}
 
 func _init():
 	for part_name in part_names:
@@ -41,3 +43,31 @@ func add_part_name(name: String) -> bool:
 	part_data[clean_name] = {"parent": ""}
 	print("RiggingState: Part '%s' added successfully, returning true." % clean_name)
 	return true
+
+# Establecer la jerarquía actual
+func set_current_hierarchy(name: String):
+	current_hierarchy_name = name
+
+# Obtener la jerarquía actual
+func get_current_hierarchy() -> String:
+	return current_hierarchy_name
+
+# Guardar datos de jerarquía personalizada
+func save_hierarchy_data(name: String, data: Dictionary):
+	custom_hierarchies[name] = data
+
+# Cargar datos de jerarquía personalizada
+func load_hierarchy_data(name: String) -> Dictionary:
+	if custom_hierarchies.has(name):
+		return custom_hierarchies[name]
+	return {}
+
+# Obtener todas las jerarquías disponibles
+func get_available_hierarchies() -> Array[String]:
+	var result: Array[String] = ["humanoid"]  # Siempre incluir la humanoid por defecto
+	
+	for name in custom_hierarchies.keys():
+		if name not in result:
+			result.append(name)
+	
+	return result

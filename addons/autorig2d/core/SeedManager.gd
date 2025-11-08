@@ -44,6 +44,11 @@ func on_texture_gui_input(event):
 
 		if not _rigging_state.seed_data.has(_rigging_state.current_part_name):
 			_rigging_state.seed_data[_rigging_state.current_part_name] = []
+
+		if _rigging_state.seed_data[_rigging_state.current_part_name].size() >= 2:
+			print("SeedManager: No se pueden agregar más de 2 semillas por parte.")
+			_rigging_state.adding_seeds = false
+			return
 		
 		_rigging_state.seed_data[_rigging_state.current_part_name].append(canvas_pos)
 		
