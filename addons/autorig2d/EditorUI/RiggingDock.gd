@@ -199,7 +199,7 @@ func _update_hierarchy_list():
         return
         
     _hierarchy_option_button.clear()
-    var hierarchies = _rigging_state.get_available_hierarchies()
+    var hierarchies = hierarchy_builder.get_available_hierarchies()
     
     for hierarchy_name in hierarchies:
         _hierarchy_option_button.add_item(hierarchy_name)
@@ -207,11 +207,20 @@ func _update_hierarchy_list():
 # Manejar la selección de una jerarquía
 func _on_hierarchy_selected(index: int):
     var hierarchy_name = _hierarchy_option_button.get_item_text(index)
-    _rigging_state.set_current_hierarchy(hierarchy_name)
+    
+    # Actualizar el builder con la jerarquía seleccionada
+    hierarchy_builder.current_hierarchy_name = hierarchy_name
+    
+    # Actualizar el estado global con la jerarquía del builder
+    _rigging_state.current_hierarchy_name = hierarchy_builder.current_hierarchy_name
     
     # Actualizar el rig_generator para usar la nueva jerarquía
     if rig_generator:
         rig_generator.set_current_hierarchy(hierarchy_name)
+    
+    # Si el editor de jerarquías está abierto, actualizarlo también
+    if is_instance_valid(hierarchy_editor_ui) and hierarchy_editor_ui.visible:
+        hierarchy_editor_ui.set_current_hierarchy(hierarchy_name)
     
     print("Jerarquía seleccionada: ", hierarchy_name)
 
@@ -221,6 +230,9 @@ func _on_edit_hierarchy_pressed():
     if not is_instance_valid(hierarchy_editor_ui):
         hierarchy_editor_ui = HierarchyEditorUI_Scene.instantiate()
         add_child(hierarchy_editor_ui)
+        
+        # Pasar la instancia de hierarchy_builder
+        hierarchy_editor_ui.set_hierarchy_builder(hierarchy_builder)
         
         # Conectar señales
         hierarchy_editor_ui.connect("hierarchy_changed", Callable(self, "_on_hierarchy_changed"))
@@ -241,10 +253,12 @@ func _on_hierarchy_changed(hierarchy_name: String):
     _update_hierarchy_list()
     
     # Seleccionar la jerarquía modificada
+    # Desconectar temporalmente para evitar la llamada recursiva a _on_hierarchy_selected
+    _hierarchy_option_button.item_selected.disconnect(_on_hierarchy_selected)
     var index = _get_option_button_item_index_by_text(_hierarchy_option_button, hierarchy_name)
     if index != -1:
         _hierarchy_option_button.select(index)
-        _on_hierarchy_selected(index)
+    _hierarchy_option_button.item_selected.connect(_on_hierarchy_selected)
 
 # Manejar el checkbox de motores optimizados
 func _on_optimized_toggled(pressed: bool):

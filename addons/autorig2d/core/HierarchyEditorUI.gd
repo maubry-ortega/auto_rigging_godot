@@ -24,9 +24,6 @@ var current_hierarchy_name: String = ""
 var selected_bone_name: String = ""
 
 func _ready():
-	# Inicializar el constructor de jerarquías
-	hierarchy_builder = SkeletonHierarchyBuilder.new()
-	
 	# Conectar señales
 	create_button.pressed.connect(_on_create_button_pressed)
 	save_button.pressed.connect(_on_save_button_pressed)
@@ -36,11 +33,11 @@ func _ready():
 	hierarchy_tree.item_selected.connect(_on_tree_item_selected)
 	hierarchy_tree.button_clicked.connect(_on_tree_button_clicked)
 	file_dialog.file_selected.connect(_on_file_dialog_file_selected)
-	
-	# Actualizar la lista de jerarquías disponibles
+
+func set_hierarchy_builder(builder: SkeletonHierarchyBuilder):
+	hierarchy_builder = builder
+	print("HierarchyEditorUI: hierarchy_builder is ", hierarchy_builder)
 	_update_hierarchy_list()
-	
-	# Actualizar el árbol de jerarquías
 	_update_hierarchy_tree()
 
 # Actualizar la lista de jerarquías disponibles
@@ -184,6 +181,10 @@ func _on_create_button_pressed():
 		_update_hierarchy_tree()
 		_update_hierarchy_list()
 		hierarchy_changed.emit(current_hierarchy_name)
+	else:
+		# If creation failed, ensure current_hierarchy_name is not set to a non-existent hierarchy
+		# or handle the error appropriately, e.g., by showing a message.
+		push_error("Failed to create hierarchy: " + name + ". It might already exist.")
 
 # Manejar el botón de guardar jerarquía
 func _on_save_button_pressed():
@@ -208,12 +209,16 @@ func _on_file_dialog_file_selected(path: String):
 		if hierarchy_builder.load_hierarchy_from_file(path):
 			# Obtener el nombre de la jerarquía cargada
 			var file = FileAccess.open(path, FileAccess.READ)
+			if file == null:
+				push_error("Could not open file to read hierarchy name.")
+				return
 			var json_string = file.get_as_text()
 			file.close()
 			
-			var json = JSON.new()
-			json.parse(json_string)
-			var data = json.data
+			var data = JSON.parse_string(json_string)
+			if data == null:
+				push_error("Could not parse JSON to get hierarchy name.")
+				return
 			
 			current_hierarchy_name = data.name
 			hierarchy_name_edit.text = current_hierarchy_name

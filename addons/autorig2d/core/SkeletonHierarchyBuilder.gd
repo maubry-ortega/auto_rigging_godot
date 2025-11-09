@@ -6,7 +6,7 @@ class_name SkeletonHierarchyBuilder
 class BoneHierarchy:
 	var name: String
 	var parent: String = ""
-	var children: Array[String] = []
+	var children: Array[String]
 	var bone_type: String = "standard"  # standard, spine, limb, etc.
 	var auto_generate: bool = true  # Si se genera automáticamente o es definido por el usuario
 	var length: float = 50.0  # Longitud predeterminada
@@ -15,6 +15,7 @@ class BoneHierarchy:
 	func _init(n: String, p: String = ""):
 		name = n
 		parent = p
+		children = []
 
 # Almacenamiento de jerarquías predefinidas y personalizadas
 var predefined_hierarchies: Dictionary = {}
@@ -270,17 +271,14 @@ func load_hierarchy_from_file(file_path: String) -> bool:
 		push_error("No se pudo abrir el archivo para lectura")
 		return false
 	
-	var json_string = file.get_as_text()
+	var json_String = file.get_as_text()
 	file.close()
 	
-	var json = JSON.new()
-	var parse_result = json.parse(json_string)
-	
-	if parse_result != OK:
+	var data = JSON.parse_string(json_String)
+	if data == null:
 		push_error("Error al parsear el archivo JSON")
 		return false
 	
-	var data = json.data
 	if not data.has("name") or not data.has("bones"):
 		push_error("Formato de archivo inválido")
 		return false
@@ -299,7 +297,10 @@ func load_hierarchy_from_file(file_path: String) -> bool:
 		var bone_data = bones_data[bone_name]
 		
 		var bone = BoneHierarchy.new(bone_name, bone_data.get("parent", ""))
-		bone.children = bone_data.get("children", [])
+		var loaded_children = bone_data.get("children", [])
+		bone.children.clear() # Clear existing array
+		for child_name in loaded_children:
+			bone.children.append(child_name)
 		bone.bone_type = bone_data.get("bone_type", "standard")
 		bone.auto_generate = bone_data.get("auto_generate", true)
 		bone.length = bone_data.get("length", 50.0)

@@ -7,7 +7,7 @@ class_name RiggingState
 @export var loaded_image_path: String = ""
 @export var part_data: Dictionary = {}
 @export var part_names: Array[String] = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg"]
-@export var seed_data: Dictionary = {}
+@export var seed_data: Dictionary = {} 
 @export var current_part_name: String = ""
 @export var current_seed_name: String = ""
 @export var current_polygon_points: PackedVector2Array = PackedVector2Array()
