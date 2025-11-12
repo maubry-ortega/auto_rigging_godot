@@ -1,5 +1,6 @@
 # CoordinateManager.gd
 extends RefCounted
+class_name CoordinateManager
 
 # --- Propiedades ---
 var texture_rect: TextureRect

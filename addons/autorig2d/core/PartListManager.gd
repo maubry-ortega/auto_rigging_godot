@@ -1,7 +1,7 @@
 extends Node
 class_name PartListManager
 
-var _rigging_state: RiggingState
+var _rigging_state: RiggingStateManager
 
 # El corazón de la comunicación: la señal
 signal part_name_added(new_name: String, all_parts: Array)
@@ -10,7 +10,7 @@ signal part_name_added(new_name: String, all_parts: Array)
 const ATLAS_PIXEL_TO_UNIT_SCALE = 2.0
 const MAX_REGION_PIXELS = 400000
 
-func initialize(rigging_state: RiggingState):
+func initialize(rigging_state: RiggingStateManager):
 	_rigging_state = rigging_state
 
 # GETTER

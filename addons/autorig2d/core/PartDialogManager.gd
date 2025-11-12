@@ -1,11 +1,11 @@
 extends Node
 
-var _rigging_state: RiggingState
+var _rigging_state: RiggingStateManager
 var _part_manager: PartListManager
 var _new_part_dialog: AcceptDialog
 var _ui_node: Control # Keep a reference to the UI node to add the dialog
 
-func initialize_dialog(ui_node: Control, rigging_state: RiggingState, part_manager: PartListManager):
+func initialize_dialog(ui_node: Control, rigging_state: RiggingStateManager, part_manager: PartListManager):
 	_ui_node = ui_node
 	_rigging_state = rigging_state
 	_part_manager = part_manager

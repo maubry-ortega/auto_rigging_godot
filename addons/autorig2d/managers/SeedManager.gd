@@ -1,13 +1,14 @@
 extends Node
+class_name SeedManager
 signal seeds_updated
 
-const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
-const RiggingState = preload("res://addons/autorig2d/core/RiggingState.gd")
+const CoordinateManager = preload("res://addons/autorig2d/utils/CoordinateManager.gd")
+const RiggingStateManager = preload("res://addons/autorig2d/managers/RiggingStateManager.gd")
 
-var _rigging_state: RiggingState
-var _coordinate_manager: CoordinateManager
+var _rigging_state
+var _coordinate_manager
 
-func initialize(rigging_state: RiggingState, coord_manager: CoordinateManager):
+func initialize(rigging_state, coord_manager):
 	_rigging_state = rigging_state
 	_coordinate_manager = coord_manager
 	print("SeedManager initialized. _rigging_state is: ", _rigging_state)
@@ -40,8 +41,6 @@ func on_texture_gui_input(event):
 			_rigging_state.adding_seeds = false
 			return
 
-		var canvas_pos = _coordinate_manager.ui_to_canvas(event.position)
-
 		if not _rigging_state.seed_data.has(_rigging_state.current_part_name):
 			_rigging_state.seed_data[_rigging_state.current_part_name] = []
 
@@ -49,12 +48,12 @@ func on_texture_gui_input(event):
 			print("SeedManager: No se pueden agregar más de 2 semillas por parte.")
 			_rigging_state.adding_seeds = false
 			return
-		
-		_rigging_state.seed_data[_rigging_state.current_part_name].append(canvas_pos)
+
+		_rigging_state.seed_data[_rigging_state.current_part_name].append(event.position)
 		
 
 		# The UI will observe changes in _rigging_state.seed_data and redraw
-		print("  ✅ %s → %s" % [_rigging_state.current_part_name, canvas_pos])
+		print("  ✅ %s → %s" % [_rigging_state.current_part_name, event.position])
 		seeds_updated.emit()
 
 func on_texture_rect_draw(rect: Control):
@@ -69,14 +68,11 @@ func on_texture_rect_draw(rect: Control):
 			continue
 
 		# Dibujar puntos
-		for canvas_point in points:
-			var ui_pos = _coordinate_manager.canvas_to_ui(canvas_point)
-			rect.draw_circle(ui_pos, 4, Color.RED)
-		
+		for point in points:
+			rect.draw_circle(point, 4, Color.RED)
+
 		# Dibujar línea y etiqueta
-		var first_pos_ui = _coordinate_manager.canvas_to_ui(points[0])
-		rect.draw_string(rect.get_theme_font("font","Label"), first_pos_ui + Vector2(8,5), part, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
-		
+		rect.draw_string(rect.get_theme_font("font","Label"), points[0] + Vector2(8,5), part, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+
 		if points.size() >= 2:
-			var second_pos_ui = _coordinate_manager.canvas_to_ui(points[1])
-			rect.draw_line(first_pos_ui, second_pos_ui, Color.YELLOW, 2.0)
+			rect.draw_line(points[0], points[1], Color.YELLOW, 2.0)

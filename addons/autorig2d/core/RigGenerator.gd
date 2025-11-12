@@ -1,20 +1,23 @@
 # RigGenerator.gd
 extends Node
+class_name RigGenerator
+# Implements IRigGenerator interface
 
-var _rigging_state: RiggingState
-var generator
-var rig_builder
-var weighting_engine
-var coordinate_manager
-var hierarchy_builder
+# Dependencies injected via Factory
+var _rigging_state
+var _polygon_generator
+var _rig_builder
+var _weighting_engine
+var _coordinate_manager
+var _hierarchy_builder
 
-func initialize(rigging_state: RiggingState, gen, rb, we, coord_manager, hb = null):
+func initialize(rigging_state, polygon_gen, rig_bldr, weighting_eng, coord_mgr, hierarchy_bldr = null):
 	_rigging_state = rigging_state
-	generator = gen
-	rig_builder = rb
-	weighting_engine = we
-	coordinate_manager = coord_manager
-	hierarchy_builder = hb
+	_polygon_generator = polygon_gen
+	_rig_builder = rig_bldr
+	_weighting_engine = weighting_eng
+	_coordinate_manager = coord_mgr
+	_hierarchy_builder = hierarchy_bldr
 
 var _generated_rig_root: Node2D = null
 var _generated_skeleton: Skeleton2D = null
@@ -34,13 +37,21 @@ func on_generate_preview_pressed():
 		return
 	var atlas_texture = ImageTexture.create_from_image(atlas_image)
 
-	var generation_result = generator.generate_body_part_polygons(atlas_image, atlas_texture, _rigging_state.seed_data, _rigging_state.polygon_epsilon)
+	var generation_result = _polygon_generator.generate_body_part_polygons(atlas_image, atlas_texture, _rigging_state.seed_data, _rigging_state.polygon_epsilon)
 	if generation_result.is_empty() or not generation_result.has("polygons") or generation_result.polygons.is_empty():
 		push_error("No se generaron polígonos.")
 		return
 
 	var polygons = generation_result.polygons
 	var origins = generation_result.origins
+
+	# Ajustar origins para que estén en el centro de los polígonos
+	for poly in polygons:
+		if origins.has(poly.name):
+			var rect = Rect2()
+			for point in poly.polygon:
+				rect = rect.expand(point)
+			origins[poly.name] = poly.position + rect.get_center()
 
 	var tree = get_tree()
 	if not is_instance_valid(tree):
@@ -63,7 +74,10 @@ func on_generate_preview_pressed():
 
 	# Usar el constructor genérico con la jerarquía actual
 	var hierarchy_name = _rigging_state.get_current_hierarchy()
-	var rig_build_result = rig_builder.build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons, _rigging_state.seed_data.keys(), hierarchy_name)
+	var rig_build_result = _rig_builder.build_complete_rig(origins, _rigging_state.seed_data, atlas_image.get_size(), polygons, _rigging_state.seed_data.keys(), hierarchy_name)
+	if not rig_build_result is Dictionary or not rig_build_result.has("skeleton"):
+		push_error("Failed to build rig: invalid result")
+		return
 	_generated_skeleton = rig_build_result["skeleton"]
 	var active_polygons = rig_build_result["polygons"]
 	_generated_rig_root.add_child(_generated_skeleton)
@@ -74,6 +88,8 @@ func on_generate_preview_pressed():
 	# Primero añadir los polígonos a la escena
 	_generated_polygons = []
 	for poly in active_polygons:
+		if poly.get_parent():
+			poly.get_parent().remove_child(poly)
 		_generated_rig_root.add_child(poly)
 		poly.owner = root
 		# Ahora que ambos nodos están en el árbol, podemos obtener la ruta de forma segura
@@ -83,10 +99,10 @@ func on_generate_preview_pressed():
 	# Actualizar la pose de descanso de los huesos con sus transformaciones actuales
 	_update_bone_rests(_generated_skeleton)
 
-	# # Llamada al engine de pesos
-	# weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	# Aplicar pesos automáticamente para rigging continuo
+	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
 
-	print("✅ Previsualización del Rig generada.")
+	print("✅ Previsualización del Rig generada con pesos aplicados.")
 	_debug_rig_info(_generated_rig_root, _generated_skeleton, _generated_polygons)
 
 
@@ -96,7 +112,7 @@ func on_generate_weights_pressed():
 		return
 
 	# Llamada al engine de pesos optimizado
-	weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
 
 	print("✅ Pesos aplicados al rig.")
 
@@ -115,7 +131,7 @@ func get_current_hierarchy() -> String:
 
 # Obtener el constructor de jerarquías
 func get_hierarchy_builder():
-	return hierarchy_builder
+	return _hierarchy_builder
 
 func _update_bone_rests(node: Node):
 	if node is Bone2D:

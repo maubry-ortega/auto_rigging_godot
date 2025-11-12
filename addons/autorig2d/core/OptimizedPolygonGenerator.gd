@@ -51,18 +51,19 @@ func generate_body_part_polygons(atlas_image: Image, atlas_texture: ImageTexture
     for i in range(all_regions.size()):
         used_regions.append(false)
 
-    # Precompute centroids para fallback por distancia
+    # Precompute centroids para fallback por distancia (optimizado)
     var region_centroids = []
-    for region in all_regions:
+    region_centroids.resize(all_regions.size())
+    for i in range(all_regions.size()):
+        var region = all_regions[i]
         var current_sum = Vector2.ZERO
-        var current_count = 0
-        for p in region.keys():
+        var current_count = region.size()
+
+        # Optimización: calcular suma directamente desde las claves del diccionario
+        for p in region:
             current_sum += Vector2(p)
-            current_count += 1
-        var centroid = Vector2.ZERO
-        if current_count > 0:
-            centroid = current_sum / float(current_count)
-        region_centroids.append(centroid)
+
+        region_centroids[i] = current_sum / float(current_count) if current_count > 0 else Vector2.ZERO
 
     # PASO 2: seed -> región con fallback por cercanía (y opción de forzar)
     var seed_to_region = {}
@@ -258,31 +259,47 @@ func _get_parent_in_hierarchy(hierarchy: Dictionary, bone_name: String) -> Strin
     
     return hierarchy[bone_name].parent
 
-# Versión optimizada de extracción de regiones usando BFS en lugar de DFS
+# Versión ultra-optimizada de extracción de regiones usando procesamiento por bloques
 func _extract_all_regions_optimized(image: Image) -> Array:
     var width = image.get_width()
     var height = image.get_height()
     var alpha_threshold = 0.1
     var visited = {}
     var regions = []
-    
-    print("🔎 Escaneando atlas para detectar regiones...")
-    
-    # Convertir imagen a array de booleanos para acceso más rápido
-    var alpha_map = _create_alpha_map(image, alpha_threshold)
-    
-    for y in range(height):
-        for x in range(width):
-            var pos = Vector2i(x, y)
-            var pos_key = "%d,%d" % [x, y]
-            if visited.has(pos_key) or not alpha_map[x][y]:
-                continue
-                
-            var region = _flood_fill_optimized(alpha_map, pos, visited)
-            if region.size() > MIN_REGION_PIXELS:
-                regions.append(region)
-                print("  → Región encontrada: %d píxeles" % region.size())
-    
+
+    print("🔎 Escaneando atlas para detectar regiones (optimizado)...")
+
+    # Procesamiento por bloques para mejor rendimiento
+    var block_size = 32  # Procesar en bloques de 32x32
+    var alpha_data = image.get_data()  # Obtener datos de imagen directamente
+
+    for block_y in range(0, height, block_size):
+        for block_x in range(0, width, block_size):
+            var block_end_x = min(block_x + block_size, width)
+            var block_end_y = min(block_y + block_size, height)
+
+            # Procesar bloque actual
+            for y in range(block_y, block_end_y):
+                for x in range(block_x, block_end_x):
+                    var pos = Vector2i(x, y)
+                    var pos_key = "%d,%d" % [x, y]
+                    if visited.has(pos_key):
+                        continue
+
+                    # Verificar alpha directamente desde los datos de imagen
+                    var pixel_idx = (y * width + x) * 4  # RGBA
+                    if pixel_idx + 3 >= alpha_data.size():
+                        continue
+                    var alpha = alpha_data[pixel_idx + 3] / 255.0
+                    if alpha < alpha_threshold:
+                        visited[pos_key] = true
+                        continue
+
+                    var region = _flood_fill_optimized_block(alpha_data, pos, visited, width, height, alpha_threshold)
+                    if region.size() > MIN_REGION_PIXELS:
+                        regions.append(region)
+                        print("  → Región encontrada: %d píxeles" % region.size())
+
     return regions
 
 # Crear mapa de alfa para acceso más rápido
@@ -300,37 +317,48 @@ func _create_alpha_map(image: Image, threshold: float) -> Array:
     
     return alpha_map
 
-# Versión optimizada de flood fill usando BFS en lugar de DFS
-func _flood_fill_optimized(alpha_map: Array, start: Vector2i, visited_global: Dictionary) -> Dictionary:
-    var width = alpha_map.size()
-    var height = alpha_map[0].size()
+# Versión ultra-optimizada de flood fill usando datos de imagen directos
+func _flood_fill_optimized_block(alpha_data: PackedByteArray, start: Vector2i, visited_global: Dictionary, width: int, height: int, alpha_threshold: float) -> Dictionary:
     var region = {}
     var queue = [start]
-    
+
     while not queue.is_empty():
         var pos = queue.pop_front()
-        
+
         # Verificar límites
         if pos.x < 0 or pos.x >= width or pos.y < 0 or pos.y >= height:
             continue
-            
+
         var pos_key = "%d,%d" % [pos.x, pos.y]
-        if visited_global.has(pos_key) or not alpha_map[pos.x][pos.y]:
+        if visited_global.has(pos_key):
             continue
-            
+
+        # Verificar alpha directamente desde los datos
+        var pixel_idx = (pos.y * width + pos.x) * 4
+        if pixel_idx + 3 >= alpha_data.size():
+            visited_global[pos_key] = true
+            continue
+
+        var alpha = alpha_data[pixel_idx + 3] / 255.0
+        if alpha < alpha_threshold:
+            visited_global[pos_key] = true
+            continue
+
         visited_global[pos_key] = true
         region[pos] = true
-        
-        # Añadir vecinos (4-conectividad)
-        queue.append(pos + Vector2i(1, 0))
-        queue.append(pos + Vector2i(-1, 0))
-        queue.append(pos + Vector2i(0, 1))
-        queue.append(pos + Vector2i(0, -1))
-        
+
+        # Añadir vecinos (4-conectividad) - optimizado
+        queue.append_array([
+            pos + Vector2i(1, 0),
+            pos + Vector2i(-1, 0),
+            pos + Vector2i(0, 1),
+            pos + Vector2i(0, -1)
+        ])
+
         # Limitar tamaño de región para evitar problemas de memoria
         if region.size() > MAX_REGION_PIXELS:
             break
-    
+
     return region
 
 # Versión optimizada de dilatación usando BitMap
@@ -458,15 +486,48 @@ func _bitmap_bitwise_and(bitmap1: BitMap, bitmap2: BitMap) -> BitMap:
 func _get_distance_to_region(seed: Vector2i, region: Dictionary) -> float:
     if region.has(seed):
         return 0.0
-    var min_sq = INF
-    for key in region.keys():
-        var p = Vector2(key)
-        var dsq = seed.distance_squared_to(p)
-        if dsq < min_sq:
-            min_sq = dsq
-    if min_sq == INF:
-        return INF
-    return sqrt(min_sq)
+
+    # Optimización: encontrar el punto más cercano usando aproximación
+    # Primero verificar puntos en un radio creciente
+    var seed_vec = Vector2(seed)
+    var min_dist_sq = INF
+
+    # Radio inicial pequeño para optimización
+    for radius in [0, 1, 2, 4, 8, 16, 32]:
+        var found = false
+        for offset in _get_spiral_offsets(radius):
+            var check_pos = seed + offset
+            var check_key = "%d,%d" % [check_pos.x, check_pos.y]
+            if region.has(check_pos):
+                var dist_sq = seed_vec.distance_squared_to(Vector2(check_pos))
+                if dist_sq < min_dist_sq:
+                    min_dist_sq = dist_sq
+                    found = true
+        if found and radius > 4:  # Si encontramos algo en radio pequeño, probablemente sea cercano
+            break
+
+    # Fallback completo solo si es necesario
+    if min_dist_sq == INF:
+        for key in region.keys():
+            var p = Vector2(key)
+            var dsq = seed_vec.distance_squared_to(p)
+            if dsq < min_dist_sq:
+                min_dist_sq = dsq
+
+    return sqrt(min_dist_sq) if min_dist_sq != INF else INF
+
+# Generar offsets en espiral para búsqueda optimizada
+func _get_spiral_offsets(radius: int) -> Array:
+    if radius == 0:
+        return [Vector2i.ZERO]
+
+    var offsets = []
+    # Generar puntos en un cuadrado de lado 2*radius+1 centrado en 0
+    for x in range(-radius, radius + 1):
+        for y in range(-radius, radius + 1):
+            if abs(x) == radius or abs(y) == radius:  # Solo el borde
+                offsets.append(Vector2i(x, y))
+    return offsets
 
 func _create_polygon_from_region(image: Image, texture: ImageTexture, pixels: Dictionary, part_name: String, polygon_epsilon: float, seeds: Dictionary) -> Polygon2D:
     if pixels.is_empty():
@@ -562,25 +623,41 @@ func _validate_triangulation(poly: Polygon2D, points: PackedVector2Array, offset
 func _simplify_rdp(points: PackedVector2Array, epsilon: float) -> PackedVector2Array:
     if points.size() < 3:
         return points
+
+    # Optimización: precalcular distancias cuadradas para evitar sqrt repetidas
+    var epsilon_sq = epsilon * epsilon
     var first = points[0]
     var last = points[points.size() - 1]
     var max_dist_sq = 0.0
     var index = 0
+
+    # Encontrar punto con máxima distancia perpendicular
     for i in range(1, points.size() - 1):
         var dist_sq = _point_to_segment_distance_sq(points[i], first, last)
         if dist_sq > max_dist_sq:
             max_dist_sq = dist_sq
             index = i
-    if max_dist_sq > epsilon * epsilon:
+
+    # Si encontramos un punto suficientemente lejos, simplificar recursivamente
+    if max_dist_sq > epsilon_sq:
         var left = _simplify_rdp(points.slice(0, index + 1), epsilon)
         var right = _simplify_rdp(points.slice(index, points.size()), epsilon)
+
+        # Combinar resultados eficientemente
         var result = PackedVector2Array()
+        result.resize(left.size() + right.size() - 1)
+
+        var idx = 0
         for p in left.slice(0, left.size() - 1):
-            result.append(p)
+            result[idx] = p
+            idx += 1
         for p in right:
-            result.append(p)
+            result[idx] = p
+            idx += 1
+
         return result
     else:
+        # Línea casi recta, mantener solo extremos
         return PackedVector2Array([first, last])
 
 func _point_to_segment_distance_sq(point: Vector2, seg_a: Vector2, seg_b: Vector2) -> float:
@@ -600,8 +677,11 @@ func _point_to_segment_distance_sq(point: Vector2, seg_a: Vector2, seg_b: Vector
 func _clean_polygon(points: PackedVector2Array) -> PackedVector2Array:
     if points.size() < 3:
         return points
+
     var epsilon = 0.5
     var cleaned = PackedVector2Array()
+
+    # Primera pasada: eliminar duplicados consecutivos
     for i in range(points.size()):
         var current = points[i]
         var is_dup = false
@@ -610,23 +690,35 @@ func _clean_polygon(points: PackedVector2Array) -> PackedVector2Array:
                 is_dup = true
         if not is_dup:
             cleaned.append(current)
-    if cleaned.size() > 0:
-        if cleaned[0].distance_to(cleaned[cleaned.size() - 1]) < epsilon:
-            cleaned.remove_at(cleaned.size() - 1)
+
+    # Cerrar el polígono si es necesario
+    if cleaned.size() > 1 and cleaned[0].distance_to(cleaned[cleaned.size() - 1]) < epsilon:
+        cleaned.remove_at(cleaned.size() - 1)
+
     if cleaned.size() < 3:
         return points
+
+    # Segunda pasada: eliminar puntos colineales y mejorar calidad
     var final = PackedVector2Array()
     final.append(cleaned[0])
+
     for i in range(1, cleaned.size() - 1):
         var prev = cleaned[i - 1]
         var curr = cleaned[i]
         var next = cleaned[i + 1]
-        var v1 = curr - prev
-        var v2 = next - curr
-        var cross = abs(v1.x * v2.y - v1.y * v2.x)
-        if cross > epsilon:
+
+        # Calcular el área del triángulo formado por prev->curr->next
+        # Si es muy pequeña, el punto está casi en línea
+        var area = abs((curr.x - prev.x) * (next.y - prev.y) - (curr.y - prev.y) * (next.x - prev.x))
+        var dist_to_line = area / prev.distance_to(next)
+
+        # Mantener puntos que contribuyen significativamente a la forma
+        if dist_to_line > epsilon * 0.1:
             final.append(curr)
+
     final.append(cleaned[cleaned.size() - 1])
+
+    # Asegurar que tengamos al menos un triángulo válido
     return final if final.size() >= 3 else cleaned
 
 func _normalize_seed_pos(item) -> Vector2:

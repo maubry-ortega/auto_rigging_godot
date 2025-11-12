@@ -12,31 +12,25 @@ const AtlasLoader = preload("uid://cosxar5jkhmk7")
 const SeedManager = preload("uid://cq7neflhr0lsd")
 const RigGenerator = preload("uid://k7dfof5c0asq")
 const PartDialogManager = preload("uid://c0rs41p7wmh1u")
-const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
-const RiggingState = preload("res://addons/autorig2d/core/RiggingState.gd")
-
-# Nuevas clases optimizadas y de jerarquía
-const SkeletonHierarchyBuilder = preload("res://addons/autorig2d/core/SkeletonHierarchyBuilder.gd")
-const OptimizedWeightingEngine = preload("res://addons/autorig2d/core/OptimizedWeightingEngine.gd")
-const OptimizedPolygonGenerator = preload("res://addons/autorig2d/core/OptimizedPolygonGenerator.gd")
-const GenericRigBuilder = preload("res://addons/autorig2d/core/GenericRigBuilder.gd")
+const ComponentFactory = preload("res://addons/autorig2d/patterns/ComponentFactory.gd")
+const RiggingStateManager = preload("res://addons/autorig2d/managers/RiggingStateManager.gd")
 const HierarchyEditorUI_Scene = preload("res://addons/autorig2d/core/HierarchyEditorUI.tscn")
 
-# Instancias
+# Instancias - Usando ComponentFactory para inicialización
 var generator = PolygonGenerator.new()
 var part_manager = PartListManager.new()
 var atlas_loader = AtlasLoader.new()
 var seed_manager = SeedManager.new()
 var rig_generator = RigGenerator.new()
 var part_dialog = PartDialogManager.new()
-var coordinate_manager = CoordinateManager.new()
-var _rigging_state = RiggingState.new() 
+var coordinate_manager = ComponentFactory.create_coordinate_manager(null, null)
+var _rigging_state = RiggingStateManager.get_instance()
 
-# Nuevas instancias optimizadas
-var hierarchy_builder = SkeletonHierarchyBuilder.new()
-var optimized_weighting_engine = OptimizedWeightingEngine.new()
-var optimized_polygon_generator = OptimizedPolygonGenerator.new(hierarchy_builder)
-var generic_rig_builder = GenericRigBuilder.new(hierarchy_builder)
+# Componentes creados con Factory
+var hierarchy_builder = ComponentFactory.create_hierarchy_builder()
+var optimized_weighting_engine = ComponentFactory.create_weighting_engine("optimized")
+var optimized_polygon_generator = ComponentFactory.create_polygon_generator("optimized", hierarchy_builder)
+var generic_rig_builder = ComponentFactory.create_rig_builder("generic", hierarchy_builder)
 var hierarchy_editor_ui = null
 
 # Estado
@@ -48,9 +42,7 @@ var _use_optimized_engines: bool = true
 func _ready():
     await get_tree().process_frame
 
-    # CORREGIDO: Inicializar _rigging_state primero y verificar que no sea null
-    if _rigging_state == null:
-        _rigging_state = RiggingState.new()
+    # _rigging_state ya está inicializado como Singleton arriba
     
     # CORREGIDO: Inicializar arrays si no existen
     if _rigging_state.part_names == null:

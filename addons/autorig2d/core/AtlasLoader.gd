@@ -1,12 +1,12 @@
 extends Node
 
-const CoordinateManager = preload("res://addons/autorig2d/core/CoordinateManager.gd")
-const RiggingState = preload("res://addons/autorig2d/core/RiggingState.gd")
+const CoordinateManager = preload("res://addons/autorig2d/utils/CoordinateManager.gd")
+const RiggingStateManager = preload("res://addons/autorig2d/managers/RiggingStateManager.gd")
 
-var _rigging_state: RiggingState
+var _rigging_state: RiggingStateManager
 var _coordinate_manager: CoordinateManager
 
-func initialize(rigging_state: RiggingState, coord_manager: CoordinateManager):
+func initialize(rigging_state: RiggingStateManager, coord_manager: CoordinateManager):
 	_rigging_state = rigging_state
 	_coordinate_manager = coord_manager
 

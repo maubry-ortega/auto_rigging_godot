@@ -149,14 +149,24 @@ func _find_associated_bones(part_name: String, bones: Array) -> Array:
     return found_bones
 
 func _find_associated_bone(part_name: String, bones: Array) -> Bone2D:
+    # First try exact match
     for i in range(bones.size()):
         var bone = bones[i]
-        if bone.name == part_name or bone.name.begins_with(part_name + "_bone"):
+        if bone.name == part_name:
             return bone
+
+    # Then try bone chains (upper/lower)
+    for i in range(bones.size()):
+        var bone = bones[i]
+        if bone.name.begins_with(part_name + "_"):
+            return bone
+
+    # Fallback to contains
     for i in range(bones.size()):
         var bone = bones[i]
         if bone.name.find(part_name) != -1:
             return bone
+
     return null
 
 # ---------------------------------------------------------
