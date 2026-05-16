@@ -100,7 +100,11 @@ func on_generate_preview_pressed():
 	_update_bone_rests(_generated_skeleton)
 
 	# Aplicar pesos automáticamente para rigging continuo
-	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	var hierarchy = {}
+	if _hierarchy_builder:
+		hierarchy = _hierarchy_builder.get_hierarchy(hierarchy_name)
+	
+	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton, hierarchy)
 
 	print("✅ Previsualización del Rig generada con pesos aplicados.")
 	_debug_rig_info(_generated_rig_root, _generated_skeleton, _generated_polygons)
@@ -112,7 +116,12 @@ func on_generate_weights_pressed():
 		return
 
 	# Llamada al engine de pesos optimizado
-	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton)
+	var hierarchy_name = _rigging_state.get_current_hierarchy()
+	var hierarchy = {}
+	if _hierarchy_builder:
+		hierarchy = _hierarchy_builder.get_hierarchy(hierarchy_name)
+		
+	_weighting_engine.assign_weights_to_polygons(_generated_polygons, _generated_skeleton, hierarchy)
 
 	print("✅ Pesos aplicados al rig.")
 
@@ -144,7 +153,7 @@ func _assign_bone_ownership(node: Node, owner: Node):
 		child.owner = owner
 		_assign_bone_ownership(child, owner)
 
-func _debug_rig_info(rig_root: Node2D, skeleton: Skeleton2D, polygons:Array):
+func _debug_rig_info(rig_root: Node2D, skeleton: Skeleton2D, polygons: Array):
 	print("\n🔍 Información del Rig Generado:")
 	print("  Nodo raíz:", rig_root.name)
 	print("  Esqueleto:", skeleton.name)

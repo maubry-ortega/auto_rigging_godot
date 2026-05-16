@@ -3,7 +3,7 @@ extends RefCounted
 class_name OptimizedWeightingEngine
 
 # Usar WorkerThreadPool para procesamiento paralelo cuando hay muchos polígonos
-func assign_weights_to_polygons(polygons: Array, skeleton: Skeleton2D) -> void:
+func assign_weights_to_polygons(polygons: Array, skeleton: Skeleton2D, hierarchy: Dictionary = {}) -> void:
     print("\n⚖️ Asignando pesos a polígonos (versión optimizada)...")
     var bones = _get_all_bones(skeleton)
     var bone_names_list := []
@@ -13,25 +13,25 @@ func assign_weights_to_polygons(polygons: Array, skeleton: Skeleton2D) -> void:
 
     # Procesar polígonos en paralelo si hay muchos
     if polygons.size() > 4:
-        _process_polygons_parallel(polygons, bones, skeleton)
+        _process_polygons_parallel(polygons, bones, skeleton, hierarchy)
     else:
-        _process_polygons_sequential(polygons, bones, skeleton)
+        _process_polygons_sequential(polygons, bones, skeleton, hierarchy)
 
     print("✅ Pesos asignados a %d polígonos" % polygons.size())
 
-func _process_polygons_parallel(polygons: Array, bones: Array, skeleton: Skeleton2D):
-    var task_id = WorkerThreadPool.add_group_task(_process_single_polygon.bind(polygons, bones, skeleton), polygons.size())
+func _process_polygons_parallel(polygons: Array, bones: Array, skeleton: Skeleton2D, hierarchy: Dictionary):
+    var task_id = WorkerThreadPool.add_group_task(_process_single_polygon.bind(polygons, bones, skeleton, hierarchy), polygons.size())
     WorkerThreadPool.wait_for_group_task_completion(task_id)
 
 # CORREGIDO: Nueva función para procesar polígonos individualmente
-func _process_single_polygon(polygons: Array, bones: Array, skeleton: Skeleton2D, index: int):
+func _process_single_polygon(polygons: Array, bones: Array, skeleton: Skeleton2D, hierarchy: Dictionary, index: int):
     # Ensure the index is valid before accessing the array
     if index >= 0 and index < polygons.size():
-        _assign_weights_to_polygon_optimized(polygons[index], bones, skeleton)
+        _assign_weights_to_polygon_optimized(polygons[index], bones, skeleton, hierarchy)
 
-func _process_polygons_sequential(polygons: Array, bones: Array, skeleton: Skeleton2D):
+func _process_polygons_sequential(polygons: Array, bones: Array, skeleton: Skeleton2D, hierarchy: Dictionary):
     for poly in polygons:
-        _assign_weights_to_polygon_optimized(poly, bones, skeleton)
+        _assign_weights_to_polygon_optimized(poly, bones, skeleton, hierarchy)
 
 # ---------------------------------------------------------
 # Recolección de huesos (sin cambios)
@@ -50,9 +50,9 @@ func _collect_bones_recursive(node: Node, bones: Array) -> void:
 # ---------------------------------------------------------
 # Asignación por polígono (optimizada)
 # ---------------------------------------------------------
-func _assign_weights_to_polygon_optimized(poly: Polygon2D, bones: Array, skeleton: Skeleton2D) -> void:
+func _assign_weights_to_polygon_optimized(poly: Polygon2D, bones: Array, skeleton: Skeleton2D, hierarchy: Dictionary) -> void:
     var part_name := poly.name
-    var associated_bones := _find_associated_bones(part_name, bones)
+    var associated_bones := _find_associated_bones(part_name, bones, hierarchy)
 
     if associated_bones.is_empty():
         print("  ⚠️ No se encontraron huesos asociados para: %s" % part_name)
@@ -110,7 +110,7 @@ func _collect_bone_descendants(bone: Bone2D, chain: Array, added: Dictionary) ->
 # ---------------------------------------------------------
 # Asociación por nombre (parte -> hueso) (sin cambios)
 # ---------------------------------------------------------
-func _find_associated_bones(part_name: String, bones: Array) -> Array:
+func _find_associated_bones(part_name: String, bones: Array, hierarchy: Dictionary) -> Array:
     var found_bones := []
 
     # overlap special-case
@@ -131,7 +131,7 @@ func _find_associated_bones(part_name: String, bones: Array) -> Array:
 
         for key in unique_parts.keys():
             if overlap_base.find(key) != -1:
-                var main_b = _find_associated_bone(key, bones)
+                var main_b = _find_associated_bone(key, bones, hierarchy)
                 if main_b and not found_bones.has(main_b):
                     found_bones.append(main_b)
 
@@ -143,19 +143,26 @@ func _find_associated_bones(part_name: String, bones: Array) -> Array:
             return found_bones
 
     # normal
-    var main_bone = _find_associated_bone(part_name, bones)
+    var main_bone = _find_associated_bone(part_name, bones, hierarchy)
     if main_bone:
         found_bones.append(main_bone)
     return found_bones
 
-func _find_associated_bone(part_name: String, bones: Array) -> Bone2D:
-    # First try exact match
+func _find_associated_bone(part_name: String, bones: Array, hierarchy: Dictionary = {}) -> Bone2D:
+    # 1. Exact Match (Prioridad absoluta)
     for i in range(bones.size()):
         var bone = bones[i]
         if bone.name == part_name:
             return bone
 
-    # Then try bone chains (upper/lower)
+    # 2. Hierarchy Match (Si tenemos datos de jerarquía)
+    if not hierarchy.is_empty() and hierarchy.has(part_name):
+        # Si la parte existe en la jerarquía, el hueso DEBE llamarse igual
+        # Si no lo encontramos en el paso 1, es que no se generó el hueso.
+        return null
+
+    # 3. Fallback: String matching para casos legacy o sin jerarquía
+    # Try bone chains (upper/lower)
     for i in range(bones.size()):
         var bone = bones[i]
         if bone.name.begins_with(part_name + "_"):
@@ -233,7 +240,7 @@ func _setup_polygon_skinning_optimized(poly: Polygon2D, bone_chain: Array) -> vo
             var vertex = poly.polygon[vi]
             var closest = Geometry2D.get_closest_point_to_segment(vertex, bone_start_local, bone_end_local)
             var dist = vertex.distance_to(closest)
-            weight_arrays[bi][vi] = exp(-(dist * dist) / denom)
+            weight_arrays[bi][vi] = exp(- (dist * dist) / denom)
 
     # Top-N influences y normalización (versión optimizada)
     var max_influences = 3

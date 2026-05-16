@@ -2,16 +2,16 @@
 extends PanelContainer
 
 # Módulos principales
-const PolygonGenerator = preload("uid://dcc5an3ptehth")
-const PartListManager  = preload("res://addons/autorig2d/core/PartListManager.gd")
-const HumanoidBuilder = preload("uid://h5xmctj7pxg6")
+const PolygonGenerator = preload("res://addons/autorig2d/core/OptimizedPolygonGenerator.gd")
+const PartListManager = preload("res://addons/autorig2d/managers/PartListManager.gd")
+# const HumanoidBuilder = preload("uid://h5xmctj7pxg6") # Removed: Unused or broken
 
 
 # Nueva lógica separada
-const AtlasLoader = preload("uid://cosxar5jkhmk7")
-const SeedManager = preload("uid://cq7neflhr0lsd")
-const RigGenerator = preload("uid://k7dfof5c0asq")
-const PartDialogManager = preload("uid://c0rs41p7wmh1u")
+const AtlasLoader = preload("res://addons/autorig2d/managers/AtlasLoader.gd")
+const SeedManager = preload("res://addons/autorig2d/managers/SeedManager.gd")
+const RigGenerator = preload("res://addons/autorig2d/core/RigGenerator.gd")
+const PartDialogManager = preload("res://addons/autorig2d/managers/PartDialogManager.gd")
 const ComponentFactory = preload("res://addons/autorig2d/patterns/ComponentFactory.gd")
 const RiggingStateManager = preload("res://addons/autorig2d/managers/RiggingStateManager.gd")
 const HierarchyEditorUI_Scene = preload("res://addons/autorig2d/core/HierarchyEditorUI.tscn")
@@ -35,9 +35,9 @@ var hierarchy_editor_ui = null
 
 # Estado
 var _new_part_dialog
-var _part_option_button: OptionButton 
+var _part_option_button: OptionButton
 var _hierarchy_option_button: OptionButton
-var _use_optimized_engines: bool = true
+
 
 func _ready():
     await get_tree().process_frame
@@ -46,7 +46,7 @@ func _ready():
     
     # CORREGIDO: Inicializar arrays si no existen
     if _rigging_state.part_names == null:
-        _rigging_state.part_names = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg"]  # Valores por defecto
+        _rigging_state.part_names = ["torso", "head", "left_arm", "right_arm", "left_leg", "right_leg"] # Valores por defecto
     if _rigging_state.part_data == null:
         _rigging_state.part_data = {}
 
@@ -70,7 +70,7 @@ func _ready():
     part_manager.initialize(_rigging_state)
     part_dialog.initialize_dialog(self, _rigging_state, part_manager)
     atlas_loader.initialize(_rigging_state, coordinate_manager)
-    seed_manager.initialize(_rigging_state, coordinate_manager)
+    seed_manager.initialize(_rigging_state, coordinate_manager, hierarchy_builder)
     
     # Inicializar rig_generator con el constructor apropiado según la configuración
     var builder_to_use = generic_rig_builder
@@ -160,14 +160,6 @@ func _setup_hierarchy_ui():
     edit_hierarchy_button.pressed.connect(_on_edit_hierarchy_pressed)
     hierarchy_container.add_child(edit_hierarchy_button)
     
-    # Checkbox para usar motores optimizados
-    var optimized_checkbox = CheckBox.new()
-    optimized_checkbox.text = "Usar motores optimizados"
-    optimized_checkbox.name = "OptimizedCheckbox"
-    optimized_checkbox.button_pressed = _use_optimized_engines
-    optimized_checkbox.toggled.connect(_on_optimized_toggled)
-    hierarchy_container.add_child(optimized_checkbox)
-    
     # Añadir el contenedor al VBox principal (después del contenedor de partes)
     var part_container = $VBoxContainer/PartNameHBox
     $VBoxContainer.add_child(hierarchy_container)
@@ -214,7 +206,22 @@ func _on_hierarchy_selected(index: int):
     if is_instance_valid(hierarchy_editor_ui) and hierarchy_editor_ui.visible:
         hierarchy_editor_ui.set_current_hierarchy(hierarchy_name)
     
+    # ACTUALIZACIÓN UI: Sincronizar la lista de partes con la jerarquía
+    var hierarchy_data = hierarchy_builder.get_hierarchy(hierarchy_name)
+    if not hierarchy_data.is_empty():
+        _rigging_state.part_names = hierarchy_data.keys()
+        _refresh_part_list()
+    
     print("Jerarquía seleccionada: ", hierarchy_name)
+
+func _refresh_part_list():
+    _part_option_button.clear()
+    for part_name in _rigging_state.part_names:
+        _part_option_button.add_item(part_name)
+    
+    if _part_option_button.get_item_count() > 0:
+        _part_option_button.select(0)
+        _on_part_selected(0)
 
 # Manejar el botón de editar jerarquía
 func _on_edit_hierarchy_pressed():
@@ -252,20 +259,6 @@ func _on_hierarchy_changed(hierarchy_name: String):
         _hierarchy_option_button.select(index)
     _hierarchy_option_button.item_selected.connect(_on_hierarchy_selected)
 
-# Manejar el checkbox de motores optimizados
-func _on_optimized_toggled(pressed: bool):
-    _use_optimized_engines = pressed
-    
-    # Reinicializar rig_generator con las nuevas configuraciones
-    if rig_generator:
-        var builder_to_use = generic_rig_builder
-        var weighting_engine_to_use = optimized_weighting_engine
-        var generator_to_use = optimized_polygon_generator
-        
-        rig_generator.initialize(_rigging_state, generator_to_use, builder_to_use, weighting_engine_to_use, coordinate_manager, hierarchy_builder)
-    
-    print("Motores optimizados: ", "Activados" if _use_optimized_engines else "Desactivados")
-
 func _on_part_selected(index: int):
     _rigging_state.current_part_name = _part_option_button.get_item_text(index)
     print("RiggingDock: _rigging_state.current_part_name updated to: ", _rigging_state.current_part_name)
@@ -275,7 +268,6 @@ func _on_part_selected(index: int):
 func _update_parent_option_button():
     # Esta función ahora actualiza la lógica de parentesco internamente
     # pero seguimos usando el mismo OptionButton para seleccionar partes
-    
     var current_part_name = _rigging_state.current_part_name
     print("Current part updated: ", current_part_name)
     

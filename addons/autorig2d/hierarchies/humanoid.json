@@ -1,0 +1,99 @@
+{
+    "name": "humanoid",
+    "bones": {
+        "torso": {
+            "parent": "",
+            "children": [
+                "head",
+                "left_arm",
+                "right_arm",
+                "left_leg",
+                "right_leg"
+            ],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "head": {
+            "parent": "torso",
+            "children": [],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "left_arm": {
+            "parent": "torso",
+            "children": [
+                "left_hand"
+            ],
+            "bone_type": "limb",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "left_hand": {
+            "parent": "left_arm",
+            "children": [],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "right_arm": {
+            "parent": "torso",
+            "children": [
+                "right_hand"
+            ],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "right_hand": {
+            "parent": "right_arm",
+            "children": [],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "left_leg": {
+            "parent": "torso",
+            "children": [
+                "left_foot"
+            ],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "left_foot": {
+            "parent": "left_leg",
+            "children": [],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "right_leg": {
+            "parent": "torso",
+            "children": [
+                "right_foot"
+            ],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        },
+        "right_foot": {
+            "parent": "right_leg",
+            "children": [],
+            "bone_type": "standard",
+            "auto_generate": true,
+            "length": 50.0,
+            "angle": 0.0
+        }
+    }
+}

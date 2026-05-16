@@ -59,8 +59,86 @@ func build_complete_rig(origins: Dictionary, seeds: Dictionary, atlas_size: Vect
 	# 6. Establecer la pose de descanso final
 	_set_bone_rests_recursive(skeleton)
 
+	# 7. Aplicar IK avanzado (TwoBoneIK para extremidades)
+	_apply_advanced_ik(skeleton, hierarchy)
+
 	print("✅ Esqueleto construido con %d huesos" % bones.size())
 	return {"skeleton": skeleton, "polygons": active_polygons}
+
+# --- IK Integration ---
+const SimpleTwoBoneIK = preload("res://addons/autorig2d/core/ik/SimpleTwoBoneIK.gd")
+const AutoIKTarget = preload("res://addons/autorig2d/core/ik/AutoIKTarget.gd")
+
+func _apply_advanced_ik(skeleton: Skeleton2D, hierarchy: Dictionary):
+	print("⚙️ Aplicando IK avanzado...")
+	
+	# Recorrer la jerarquía buscando 'limbs'
+	for bone_name in hierarchy.keys():
+		var data = hierarchy[bone_name]
+		# Soporte tanto para Dictionary (legacy/default) como para BoneHierarchy (objeto)
+		var b_type = "standard"
+		if typeof(data) == TYPE_DICTIONARY:
+			b_type = data.get("bone_type", "standard")
+		elif data is Object and "bone_type" in data:
+			b_type = data.bone_type
+			
+		if b_type == "limb":
+			_create_limb_ik(skeleton, bone_name, data, hierarchy)
+
+func _create_limb_ik(skeleton: Skeleton2D, bone_name: String, data, hierarchy: Dictionary):
+	# Un 'limb' típico comienza en bone_name (ej: left_arm) y tiene un hijo (ej: left_hand)
+	# Necesitamos identificar: Hueso 1 (arm), Hueso 2 (hand/forearm)
+	var bone1_node = skeleton.find_child(bone_name)
+	if not bone1_node: return
+	
+	# Buscar el segundo hueso (el primer hijo definido en la jerarquía)
+	var children_names = []
+	if typeof(data) == TYPE_DICTIONARY:
+		children_names = data.get("children", [])
+	elif data is Object and "children" in data:
+		children_names = data.children
+		
+	if children_names.is_empty(): return
+	
+	var bone2_name = children_names[0]
+	var bone2_node = skeleton.find_child(bone2_name)
+	if not bone2_node: return
+	
+	print("  - Creando IK para extremidad: %s -> %s" % [bone_name, bone2_name])
+	
+	# Crear el nodo IK
+	var ik = SimpleTwoBoneIK.new()
+	ik.name = "IK_" + bone_name
+	skeleton.add_child(ik)
+	ik.owner = skeleton.owner
+	
+	# Configurar rutas
+	ik.bone1_path = ik.get_path_to(bone1_node)
+	ik.bone2_path = ik.get_path_to(bone2_node)
+	
+	# Crear Target
+	var target = AutoIKTarget.new()
+	target.name = "Target_" + bone_name
+	# Posicionar target en la punta del hueso 2 (o donde termina)
+	# Asumimos que el hueso 2 apunta hacia su hijo o tiene una longitud
+	var tip_pos = bone2_node.global_position + Vector2.from_angle(bone2_node.global_rotation) * bone2_node.get_length()
+	
+	# Si el hueso 2 tiene hijos, usar la posición del hijo como punta
+	if bone2_node.get_child_count() > 0:
+		var child = bone2_node.get_child(0)
+		if child is Bone2D:
+			tip_pos = child.global_position
+			
+	target.global_position = tip_pos
+	skeleton.add_child(target)
+	target.owner = skeleton.owner
+	
+	ik.target_node = target
+	
+	# Configurar flip si es necesario (heurística simple basada en nombre)
+	if "right" in bone_name:
+		ik.flip_bend = true # A veces necesario para brazos derechos
+
 
 # Obtener la jerarquía humanoid por defecto
 func _get_default_humanoid_hierarchy() -> Dictionary:
@@ -110,25 +188,9 @@ func _create_anatomical_skeleton(origins: Dictionary, seeds: Dictionary, all_bon
 		all_bones[bone.name] = bone
 
 # Posicionar huesos usando seeds y origins para consistencia
+# ESTA FUNCION YA NO SE USA DIRECTAMENTE, LA LOGICA SE MUEVE A _pose_bones_generic
 func _position_bones_from_seeds(origins: Dictionary, seeds: Dictionary, all_bones: Dictionary) -> void:
-	for part_name in origins.keys():
-		if not all_bones.has(part_name) or not seeds.has(part_name):
-			continue
-
-		var bone = all_bones[part_name]
-		var origin_pos = origins[part_name]
-		bone.position = origin_pos
-
-		var part_seeds = seeds[part_name]
-		if part_seeds.size() >= 2:
-			var start_pos = _seed_point_at(seeds, part_name, 0)
-			var end_pos = _seed_point_at(seeds, part_name, 1)
-			if start_pos is Vector2 and end_pos is Vector2:
-				bone.length = start_pos.distance_to(end_pos)
-				bone.rotation = (end_pos - start_pos).angle()
-		else:
-			bone.length = 50.0
-			bone.rotation = 0.0
+	pass
 
 # Construir la jerarquía de forma genérica
 func _build_hierarchy_generic(skeleton: Skeleton2D, bones: Dictionary, origins: Dictionary, all_polygons: Array, hierarchy: Dictionary) -> Array:
@@ -137,7 +199,13 @@ func _build_hierarchy_generic(skeleton: Skeleton2D, bones: Dictionary, origins: 
 	# Conectar según la jerarquía personalizada
 	for bone_name in hierarchy.keys():
 		var bone_data = hierarchy[bone_name]
-		var parent_name = bone_data.parent
+		var parent_name = ""
+		
+		if typeof(bone_data) == TYPE_DICTIONARY:
+			parent_name = bone_data.get("parent", "")
+		elif bone_data is Object and "parent" in bone_data:
+			parent_name = bone_data.parent
+
 
 		if not parent_name.is_empty() and bones.has(bone_name) and bones.has(parent_name):
 			var bone = bones[bone_name]
@@ -154,19 +222,71 @@ func _build_hierarchy_generic(skeleton: Skeleton2D, bones: Dictionary, origins: 
 
 	return active_polygons
 
-# Posicionar los huesos de forma genérica
-func _pose_bones_generic(node: Node, seeds: Dictionary, rig_offset: Vector2, hierarchy: Dictionary):
+# Posicionar los huesos de forma genérica (CORREGIDO: Respetando jerarquía)
+func _pose_bones_generic(node: Node, seeds: Dictionary, rig_offset: Vector2, hierarchy: Dictionary, parent_global_transform: Transform2D = Transform2D()):
 	if node is Bone2D:
 		var bone: Bone2D = node
-
-		# Ajustar posición por el offset del rig
-		bone.position -= rig_offset
-
-		# Set rest pose
-		bone.rest = bone.transform
-
-	for child in node.get_children():
-		_pose_bones_generic(child, seeds, rig_offset, hierarchy)
+		var part_name = bone.name
+		
+		# 1. Determinar la Transform Global deseada para este hueso
+		var desired_global_pos = Vector2.ZERO
+		var desired_global_rot = 0.0
+		var length = 50.0
+		
+		# Intentar usar semillas
+		if seeds.has(part_name):
+			var part_seeds = seeds[part_name]
+			if part_seeds.size() >= 1:
+				var p0 = _seed_point_at(seeds, part_name, 0)
+				if p0 is Vector2:
+					desired_global_pos = p0
+			
+			if part_seeds.size() >= 2:
+				var p0 = _seed_point_at(seeds, part_name, 0)
+				var p1 = _seed_point_at(seeds, part_name, 1)
+				if p0 is Vector2 and p1 is Vector2:
+					length = p0.distance_to(p1)
+					desired_global_rot = (p1 - p0).angle()
+		
+		# Si no hay semillas, usar posición actual (que venía de origins) o default
+		else:
+			desired_global_pos = bone.position # Asumimos que esto era global temporalmente
+		
+		# Aplicar offset del rig
+		desired_global_pos -= rig_offset
+		
+		# 2. Convertir a Local Space del padre
+		# Si tiene padre (Bone2D), usamos parent_global_transform
+		# Si no tiene padre (es hijo de Skeleton2D), su transform es local al Skeleton, que asumimos en (0,0)
+		
+		var local_pos = desired_global_pos
+		var local_rot = desired_global_rot
+		
+		if bone.get_parent() is Bone2D:
+			# Transformar posición global a local del padre
+			local_pos = parent_global_transform.affine_inverse() * desired_global_pos
+			local_rot = desired_global_rot - parent_global_transform.get_rotation()
+			
+		# 3. Aplicar al hueso
+		bone.position = local_pos
+		bone.rotation = local_rot
+		bone.length = length
+		
+		# 4. Calcular mi nueva global transform para pasar a los hijos
+		var my_global_transform = parent_global_transform * bone.transform
+		
+		# Recursión
+		for child in node.get_children():
+			_pose_bones_generic(child, seeds, rig_offset, hierarchy, my_global_transform)
+			
+	else:
+		# Si es el Skeleton2D (raíz), su global es Identity (o su transform actual)
+		var current_global = Transform2D()
+		if node is Node2D:
+			current_global = node.global_transform # Debería ser Identity si no está en escena
+			
+		for child in node.get_children():
+			_pose_bones_generic(child, seeds, rig_offset, hierarchy, current_global)
 
 func _get_seed_pos(seed) -> Vector2:
 	if typeof(seed) == TYPE_DICTIONARY and seed.has("pos"):

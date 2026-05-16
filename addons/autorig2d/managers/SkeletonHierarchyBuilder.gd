@@ -7,10 +7,10 @@ class BoneHierarchy:
 	var name: String
 	var parent: String = ""
 	var children: Array[String]
-	var bone_type: String = "standard"  # standard, spine, limb, etc.
-	var auto_generate: bool = true  # Si se genera automáticamente o es definido por el usuario
-	var length: float = 50.0  # Longitud predeterminada
-	var angle: float = 0.0  # Ángulo predeterminado
+	var bone_type: String = "standard" # standard, spine, limb, etc.
+	var auto_generate: bool = true # Si se genera automáticamente o es definido por el usuario
+	var length: float = 50.0 # Longitud predeterminada
+	var angle: float = 0.0 # Ángulo predeterminado
 	
 	func _init(n: String, p: String = ""):
 		name = n
@@ -26,56 +26,60 @@ func _init():
 	# Cargar jerarquías predefinidas
 	_load_predefined_hierarchies()
 
-# Cargar jerarquías predefinidas (humanoide, cuadrúpedo, etc.)
+# Cargar jerarquías predefinidas desde archivos JSON
 func _load_predefined_hierarchies():
-	# Jerarquía humanoide (la que ya tienes)
-	var humanoid = _create_humanoid_hierarchy()
-	predefined_hierarchies["humanoid"] = humanoid
+	var hierarchies_dir = "res://addons/autorig2d/hierarchies/"
+	var dir = DirAccess.open(hierarchies_dir)
 	
-	# Podríamos añadir más jerarquías predefinidas
-	# predefined_hierarchies["quadruped"] = _create_quadruped_hierarchy()
-	# predefined_hierarchies["bird"] = _create_bird_hierarchy()
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".json"):
+				_load_hierarchy_from_json(hierarchies_dir + file_name)
+			file_name = dir.get_next()
+	else:
+		push_warning("No se encontró el directorio de jerarquías: " + hierarchies_dir)
 
-# Crear la jerarquía humanoide existente
-func _create_humanoid_hierarchy() -> Dictionary:
+# Helper para cargar una jerarquía específica desde JSON y añadirla a predefined_hierarchies
+func _load_hierarchy_from_json(file_path: String):
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		push_error("No se pudo abrir el archivo de jerarquía: " + file_path)
+		return
+		
+	var json_string = file.get_as_text()
+	file.close()
+	
+	var data = JSON.parse_string(json_string)
+	if data == null:
+		push_error("Error al parsear JSON de jerarquía: " + file_path)
+		return
+		
+	if not data.has("name") or not data.has("bones"):
+		return
+		
+	var hierarchy_name = data.name
 	var hierarchy = {}
 	
-	# Torso
-	hierarchy["torso"] = BoneHierarchy.new("torso")
-	
-	# Cabeza
-	hierarchy["head"] = BoneHierarchy.new("head", "torso")
-	hierarchy["torso"].children.append("head")
-	
-	# Brazo izquierdo
-	hierarchy["left_arm"] = BoneHierarchy.new("left_arm", "torso")
-	hierarchy["torso"].children.append("left_arm")
-	
-	hierarchy["left_hand"] = BoneHierarchy.new("left_hand", "left_arm")
-	hierarchy["left_arm"].children.append("left_hand")
-	
-	# Brazo derecho
-	hierarchy["right_arm"] = BoneHierarchy.new("right_arm", "torso")
-	hierarchy["torso"].children.append("right_arm")
-	
-	hierarchy["right_hand"] = BoneHierarchy.new("right_hand", "right_arm")
-	hierarchy["right_arm"].children.append("right_hand")
-	
-	# Pierna izquierda
-	hierarchy["left_leg"] = BoneHierarchy.new("left_leg", "torso")
-	hierarchy["torso"].children.append("left_leg")
-	
-	hierarchy["left_foot"] = BoneHierarchy.new("left_foot", "left_leg")
-	hierarchy["left_leg"].children.append("left_foot")
-	
-	# Pierna derecha
-	hierarchy["right_leg"] = BoneHierarchy.new("right_leg", "torso")
-	hierarchy["torso"].children.append("right_leg")
-	
-	hierarchy["right_foot"] = BoneHierarchy.new("right_foot", "right_leg")
-	hierarchy["right_leg"].children.append("right_foot")
-	
-	return hierarchy
+	var bones_data = data.bones
+	for bone_name in bones_data.keys():
+		var bone_data = bones_data[bone_name]
+		var bone = BoneHierarchy.new(bone_name, bone_data.get("parent", ""))
+		
+		var loaded_children = bone_data.get("children", [])
+		for child_name in loaded_children:
+			bone.children.append(child_name)
+			
+		bone.bone_type = bone_data.get("bone_type", "standard")
+		bone.auto_generate = bone_data.get("auto_generate", true)
+		bone.length = bone_data.get("length", 50.0)
+		bone.angle = bone_data.get("angle", 0.0)
+		
+		hierarchy[bone_name] = bone
+		
+	predefined_hierarchies[hierarchy_name] = hierarchy
+	print("Jerarquía cargada: ", hierarchy_name)
 
 # Obtener una jerarquía específica
 func get_hierarchy(name: String) -> Dictionary:
